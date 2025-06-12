@@ -1,0 +1,44 @@
+.navbar {
+    background-color: #1f2937; /* Tailwind's bg-gray-900 */
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-links {
+    display: flex;
+    gap: 1rem;
+    color: white;
+    font-weight: 600;
+}
+
+.navbar-link {
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.navbar-link:hover {
+    color: #d1d5db; /* Tailwind's text-gray-300 */
+}
+
+.logout-button {
+    background-color: #dc2626; /* Tailwind's bg-red-600 */
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+    background-color: #b91c1c; /* Tailwind's bg-red-700 */
+}
