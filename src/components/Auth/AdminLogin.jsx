@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import AuthService from '../../services/AuthService';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import './Login.css'; // Import the CSS file
 import { useNavigate } from 'react-router-dom';
+
 import { AuthContext } from '../../context/-AuthContext';
-import { useContext } from 'react';
 
-
-const Login = () => {
+const AdminLogin = () => {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [message, setMessage] = useState('');
-    const navigate = useNavigate();
-    const { login } = useContext(AuthContext);
+    const navigate=useNavigate();
+    const {login} = useContext(AuthContext)
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -22,14 +21,12 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await AuthService.login(formData.username, formData.password);
-            // Save token (optional)
-            //localStorage.setItem("token", response.data.token);
+            const response = await AuthService.adminlogin(formData.username, formData.password);
+           // localStorage.setItem("token", response.data.token);
+            login(response.data.userName,response.data.token)
             console.log(response.data.token)
-            //setMessage(`Welcome, ${response.data.username}!`);
-           // localStorage.setItem("username", response.data.userName);
-            login(response.data.userName,response.data.token);
-            navigate('/');
+            navigate('/admin-dashboard');
+           // setMessage(`Welcome, ${response.data.username}!`);
         } catch (error) {
             setMessage('Login failed. Check your credentials.');
         }
@@ -39,6 +36,7 @@ const Login = () => {
         <div className="login-container">
             <Card className="login-card">
                 <CardContent>
+                    <h2 className="login-heading">Admin Login</h2>
                     <form onSubmit={handleSubmit}>
                         <input
                             type="text"
@@ -65,4 +63,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default AdminLogin;

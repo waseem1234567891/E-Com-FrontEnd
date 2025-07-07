@@ -11,10 +11,7 @@ function ProductList() {
 
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-
   const { refreshCartFlag, triggerCartRefresh } = useCartContext();
-
-
   const [selectedProduct, setSelectedProduct] = useState(null);
   
 //open

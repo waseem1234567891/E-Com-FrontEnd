@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import CartService from "../services/CartService";
 import { useCartContext } from "../context/CartContext";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const { refreshCartFlag, triggerCartRefresh } = useCartContext();
+  const navigate=useNavigate();
 
   const fetchCart = async () => {
     try {
@@ -37,10 +39,10 @@ const Cart = () => {
     }
   };
 
-  const handleCheckout = () => {
-    alert("Checkout successful!");
-    handleClearCart();
+ const handleCheckout = () => {
+    navigate("/checkout");
   };
+
 
   // Calculate total price
   const totalPrice = cartItems.reduce((total, item) => {

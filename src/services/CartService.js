@@ -1,6 +1,6 @@
 import api from "./api";
 
-//const API_BASE_URL = "http://localhost:8989/api/cart";
+//const API_BASE_URL = "http://localhost:8989/cart";
 class CartService {
   static async addToCart(productId,productName,productImage,productPrice, quantity = 1) {
     try {

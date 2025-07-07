@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL="http://localhost:8989/api/category";
+const API_BASE_URL="http://localhost:8989/category";
 
 const addCategory=(FormData)=>{
     return axios.post(`${API_BASE_URL}/add`,FormData,{
@@ -18,6 +18,7 @@ const getAllCateGory=()=>{
 
 const getCategoryById=(proCatGorId)=>{
 
+    
     return axios.get(`${API_BASE_URL}/getbyid/${proCatGorId}`)
 
 };
