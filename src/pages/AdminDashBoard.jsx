@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useContext } from 'react';
 import DashboardService from '../services/DashboardService';
 import AuthService from '../services/AuthService';
 import { useNavigate } from 'react-router-dom';
@@ -6,16 +6,18 @@ import UserManagement from './adminComponent/UserManagement';
 import ProductManagement from './adminComponent/ProductManagement';
 import OrderManagement from './adminComponent/OrderManagement';
 import './adminComponent/AdminDashBoard.css'; // <-- import CSS
+import { AuthContext } from '../context/-AuthContext';
 
 const AdminDashBoard = () => {
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const navigate = useNavigate();
+  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await DashboardService.getAdminDashboardData();
+        const response = await DashboardService.getAdminDashboardData(token);
         
         setMessage(response.data);
       } catch (error) {

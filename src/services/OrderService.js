@@ -17,7 +17,7 @@ const API_URL = "http://localhost:8989/orders";
   
 };
 //update order
- const updateOrderStatus= async (id,newStatus,token) => {
+ const updateOrderStatus= async (id,status,token) => {
   //const token = localStorage.getItem("token");
   const config = {
     headers: {
@@ -25,8 +25,8 @@ const API_URL = "http://localhost:8989/orders";
       "Content-Type": "application/json",
     }
   };
-  
-  return axios.put(`${API_URL}/updateorderstatus/${id}`,newStatus, config );
+  const data = { status };
+  return axios.put(`${API_URL}/updateorderstatus/${id}`,data, config );
 
   
 };

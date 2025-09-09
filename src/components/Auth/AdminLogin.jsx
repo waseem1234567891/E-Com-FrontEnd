@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import AuthService from '../../services/AuthService';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
-import './Login.css'; // Import the CSS file
+import '../css/Login.css'; // Import the CSS file
 import { useNavigate } from 'react-router-dom';
 
 import { AuthContext } from '../../context/-AuthContext';
@@ -11,7 +11,8 @@ const AdminLogin = () => {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [message, setMessage] = useState('');
     const navigate=useNavigate();
-    const {login} = useContext(AuthContext)
+    const {login} = useContext(AuthContext);
+    const {token} = useContext(AuthContext)
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -23,7 +24,7 @@ const AdminLogin = () => {
         try {
             const response = await AuthService.adminlogin(formData.username, formData.password);
            // localStorage.setItem("token", response.data.token);
-            login(response.data.userName,response.data.token)
+            login(response.data.userName,response.data.userId,response.data.token)
             console.log(response.data.token)
             navigate('/admin-dashboard');
            // setMessage(`Welcome, ${response.data.username}!`);

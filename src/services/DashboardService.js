@@ -1,29 +1,36 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8989/auth';
+const API_URL = 'http://localhost:8989/';
 
-const getDashboardData = async () => {
-  const token = localStorage.getItem("token");
+const getDashboardData = async (token) => {
+ // const token = localStorage.getItem("token");
   const config = {
     headers: {
       Authorization: `Bearer ${token}`
     }
   };
-  return axios.get(`${API_URL}/dashboard`, config);
+  return axios.get(`${API_URL}auth/dashboard`, config);
 
   
 };
-const getAdminDashboardData = async () => {
-  const token = localStorage.getItem("token");
+const getAdminDashboardData = async (token) => {
+  //const token = localStorage.getItem("token");
   const config = {
     headers: {
       Authorization: `Bearer ${token}`
     }
   };
-  return axios.get(`${API_URL}/admindashboard`, config);
+  return axios.get(`${API_URL}auth/admindashboard`, config);
 
   
 };
-const DashboardService={getDashboardData,getAdminDashboardData}
+const getUserOrders = (token,userId) => {
+  
+  return axios.get(`${API_URL}orders/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+const DashboardService={getDashboardData,getAdminDashboardData,getUserOrders}
 
 export default DashboardService;
