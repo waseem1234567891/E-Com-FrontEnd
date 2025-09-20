@@ -27,12 +27,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { token } = useContext(AuthContext);
 
-  const ORDER_STEPS = ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"];
+    const ORDER_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
   const STATUS_COLOR_MAP = {
     PENDING: "bg-yellow-500",
+    CONFIRMED: "bg-indigo-500",
+    PROCESSING: "bg-purple-500",
     SHIPPED: "bg-blue-500",
     DELIVERED: "bg-green-500",
     CANCELLED: "bg-red-500",
+    RETURNED: "bg-pink-500",
   };
 
   const getProgress = (status) => {
