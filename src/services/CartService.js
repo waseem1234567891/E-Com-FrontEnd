@@ -1,45 +1,81 @@
+// services/CartService.js
 import api from "./api";
 
-//const API_BASE_URL = "http://localhost:8989/cart";
+const GUEST_CART_KEY = "guestCart";
+
 class CartService {
-  static async addToCart(productId,productName,productImage,productPrice, quantity = 1) {
-    try {
-      const response = await api.post('/add', { productId,productName,productImage,productPrice, quantity });
-      return response.data;
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      throw error;
+  // 🛒 Get cart
+  static async getCart(token) {
+    if (!token) {
+      // Guest mode
+      return JSON.parse(localStorage.getItem(GUEST_CART_KEY)) || [];
     }
+
+    // Logged-in mode
+    const res = await api.get("", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
   }
 
-   static async removeFromCart(productId) {
-    try {
-      const response = await api.delete(`/removeItem/${productId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      throw error;
+  // ➕ Add to cart
+  static async addToCart(productId, userId, quantity = 1, token) {
+    if (!token) {
+      // Guest mode
+      const current = JSON.parse(localStorage.getItem(GUEST_CART_KEY)) || [];
+      const existing = current.find((i) => i.productId === productId);
+
+      if (existing) {
+        existing.quantity += quantity;
+      } else {
+        current.push({ productId, quantity, productName: "Product", productPrice: 0 });
+      }
+
+      localStorage.setItem(GUEST_CART_KEY, JSON.stringify(current));
+      return current;
     }
+
+    // Logged-in mode
+    const res = await api.post(
+      "/add",
+      { productId, userId, quantity },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return res.data;
   }
 
-   static async getCart() {
-    try {
-      const response = await api.get('');
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching cart:", error);
-      throw error;
+  // ❌ Remove item
+  static async removeFromCart(productId, token) {
+    if (!token) {
+      // Guest mode
+      const current = JSON.parse(localStorage.getItem(GUEST_CART_KEY)) || [];
+      const updated = current.filter((i) => i.productId !== productId);
+      localStorage.setItem(GUEST_CART_KEY, JSON.stringify(updated));
+      return updated;
     }
+
+    // Logged-in mode
+    const res = await api.delete(`/removeItem/${productId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
   }
-  
-  static async clearCart() {
-    try {
-      const response = await api.delete("/clear");
-      return response.data;
-    } catch (error) {
-      console.error("Error clearing cart:", error);
-      throw error;
+
+  // 🧹 Clear cart
+  static async clearCart(token) {
+    if (!token) {
+      // Guest mode
+      localStorage.removeItem(GUEST_CART_KEY);
+      return [];
     }
+
+    // Logged-in mode
+    const res = await api.delete("/clear", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
   }
 }
 

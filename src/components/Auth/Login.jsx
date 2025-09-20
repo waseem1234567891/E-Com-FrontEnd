@@ -21,6 +21,7 @@ const Login = () => {
     try {
       const response = await AuthService.login(formData.username, formData.password);
       login(response.data.userName, response.data.userId, response.data.token);
+      console.log(response.data.token);
       navigate('/');
     } catch (error) {
       if (error.response?.data?.status === 400) {

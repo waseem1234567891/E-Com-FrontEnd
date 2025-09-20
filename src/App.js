@@ -6,6 +6,7 @@ import Login from './components/Auth/Login';
 import Home from './pages/Home';
 import Navbar from './components/Navbar';
 import ForgetUsernameAndPassword from './pages/ForgetUsernameAndPassword';
+import ResetPassword from './pages/ResetPassword';
 
 import { ProductProvider } from "./context/ProductContext";
 import {CartProvider } from "./context/CartContext";
@@ -32,6 +33,7 @@ const App = () => {
         <Route path="/admin-dashboard" element={<AdminDashBoard />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/forget-username-password" element={<ForgetUsernameAndPassword/>}/>
+        <Route path="reset-password" element={<ResetPassword/>}/>
 
       </Routes>
     </Router>

@@ -87,7 +87,7 @@ const OrderManagement = () => {
                 .map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 border">{order.id}</td>
-                    <td className="px-4 py-3 border">{order.user?.username || "N/A"}</td>
+                    <td className="px-4 py-3 border">{order.userName}</td>
                     <td className="px-4 py-3 border">₹{order.totalAmount}</td>
                     <td className="px-4 py-3 border">{order.status}</td>
                     <td className="px-4 py-3 border">{order.paymentStatus}</td>
