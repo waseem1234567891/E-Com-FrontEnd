@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import DashboardService from "../services/DashboardService";
 import UserService from "../services/UserService";
 import AuthService from "../services/AuthService";
+import OrderService from "../services/OrderService";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/-AuthContext";
 
@@ -11,6 +12,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [addressForm, setAddressForm] = useState({
     street: "",
     city: "",
@@ -27,7 +29,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { token } = useContext(AuthContext);
 
-    const ORDER_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
+  const ORDER_STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
   const STATUS_COLOR_MAP = {
     PENDING: "bg-yellow-500",
     CONFIRMED: "bg-indigo-500",
@@ -45,12 +47,12 @@ const Dashboard = () => {
     return ((index + 1) / (ORDER_STEPS.length - 1)) * 100;
   };
 
+  // Fetch user profile once
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         const res = await DashboardService.getDashboardData(token);
         setUser(res.data);
-        setOrders(res.data.orders);
         setProfileForm({
           userName: res.data.userName || "",
           firstName: res.data.firstName || "",
@@ -64,15 +66,32 @@ const Dashboard = () => {
     if (token) fetchDashboard();
   }, [token, navigate]);
 
-  const handleLogout = () => {
-    AuthService.logout();
-    navigate("/login");
-  };
+  // Fetch orders lazily when orders/history tab clicked
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!user?.id || (activeTab !== "orders" && activeTab !== "history")) return;
+      setLoadingOrders(true);
+      try {
+        const res = await OrderService.getOrdersByUserId(user.id, token);
+        setOrders(res.data);
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+    fetchOrders();
+  }, [activeTab, user, token]);
 
   // --- Profile ---
   const handleSaveProfile = async () => {
     try {
-      const payload = { ...profileForm };
+      // exclude userName and email from payload
+      const payload = {
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+      };
+
       const res = await AuthService.updateProfile(user.id, payload, token);
       setUser({ ...user, ...res.data });
       alert("✅ Profile updated successfully!");
@@ -134,12 +153,29 @@ const Dashboard = () => {
     }
   };
 
+  // --- Cancel Order ---
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+    try {
+      await OrderService.cancelAnOrder(orderId, token);
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: "CANCELLED" } : o))
+      );
+      alert("✅ Order cancelled successfully!");
+    } catch (err) {
+      console.error("Error cancelling order:", err);
+      alert("❌ Failed to cancel order.");
+    }
+  };
+
+  // --- Render Orders ---
   const renderOrders = (list) => (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
       {list.length === 0 && <p className="text-gray-600 col-span-full">No orders found.</p>}
       {list.map((order) => {
         const progress = getProgress(order.status);
         const colorClass = STATUS_COLOR_MAP[order.status] || "bg-gray-400";
+
         return (
           <div
             key={order.id}
@@ -152,6 +188,7 @@ const Dashboard = () => {
                   {order.status}
                 </span>
               </div>
+
               <div className="mb-4">
                 <div className="w-full bg-gray-200 h-2 rounded-full">
                   <div
@@ -165,29 +202,32 @@ const Dashboard = () => {
                   ))}
                 </div>
               </div>
+
               <div className="text-sm text-gray-700 space-y-1 mb-4">
                 <p><span className="font-medium">Total:</span> ₹{order.totalAmount}</p>
                 <p><span className="font-medium">Date:</span> {new Date(order.orderDate).toLocaleString()}</p>
                 <p><span className="font-medium">Payment:</span> {order.paymentStatus} ({order.paymentMethod})</p>
                 <p><span className="font-medium">Shipping:</span> {order.shippingAddress}</p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-2">Items:</h4>
-                <ul className="space-y-2">
-                  {order.items.map((item, index) => (
-                    <li key={index} className="flex items-center gap-3 bg-gray-50 rounded-md px-3 py-2 shadow-sm">
-                      <img
-                        src={`http://localhost:8989${item.product?.imagePath}`}
-                        alt={item.product?.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div className="text-sm text-gray-700">
-                        <p className="font-medium">{item.product?.name}</p>
-                        <p>Qty: {item.quantity} × ₹{item.price ?? item.product?.price ?? "N/A"}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => navigate(`/order/${order.id}`)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+                >
+                  View Details
+                </button>
+
+                {order.status !== "SHIPPED" &&
+                  order.status !== "DELIVERED" &&
+                  order.status !== "CANCELLED" && (
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
               </div>
             </div>
           </div>
@@ -202,9 +242,6 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-gray-800">
           Welcome, {user?.firstName || ""} {user?.lastName || ""}
         </h1>
-        <button onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md shadow">
-          Logout
-        </button>
       </div>
 
       {/* Tabs */}
@@ -219,28 +256,35 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
           <h2 className="text-2xl font-semibold text-gray-700">Your Profile</h2>
 
-          {/* Edit Profile Form */}
           <div className="space-y-3">
-            {[
-              { field: "userName", label: "Username" },
-              { field: "firstName", label: "First Name" },
-              { field: "lastName", label: "Last Name" },
-            ].map(({ field, label }) => (
+            {/* Username (read-only) */}
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input
+                type="text"
+                value={profileForm.userName}
+                disabled
+                className="w-full border px-3 py-2 rounded-md text-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            {/* Editable first/last name */}
+            {["firstName", "lastName"].map((field) => (
               <div key={field} className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  {field === "firstName" ? "First Name" : "Last Name"}
+                </label>
                 <input
                   type="text"
                   value={profileForm[field]}
-                  placeholder={label}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, [field]: e.target.value })
-                  }
+                  placeholder={field}
+                  onChange={(e) => setProfileForm({ ...profileForm, [field]: e.target.value })}
                   className="w-full border px-3 py-2 rounded-md text-sm"
                 />
               </div>
             ))}
 
-            {/* Read-only email */}
+            {/* Email (read-only) */}
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
@@ -251,10 +295,7 @@ const Dashboard = () => {
               />
             </div>
 
-            <button
-              onClick={handleSaveProfile}
-              className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm"
-            >
+            <button onClick={handleSaveProfile} className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm">
               Save Profile
             </button>
           </div>
@@ -263,12 +304,7 @@ const Dashboard = () => {
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-semibold text-gray-800">Saved Addresses</h3>
-              <button
-                onClick={openAddModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md shadow"
-              >
-                + Add Address
-              </button>
+              <button onClick={openAddModal} className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md shadow">+ Add Address</button>
             </div>
             {user?.addresses?.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

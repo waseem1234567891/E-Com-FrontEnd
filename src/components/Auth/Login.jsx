@@ -20,7 +20,7 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await AuthService.login(formData.username, formData.password);
-      login(response.data.userName, response.data.userId, response.data.token);
+      login(response.data.userName, response.data.userId, response.data.token,response.data.role);
       console.log(response.data.token);
       navigate('/');
     } catch (error) {

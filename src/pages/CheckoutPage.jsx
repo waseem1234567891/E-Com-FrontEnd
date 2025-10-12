@@ -3,9 +3,13 @@ import CartService from "../services/CartService";
 import OrderService from "../services/OrderService";
 import UserService from "../services/UserService";
 import { AuthContext } from "../context/-AuthContext";
+import { useNotifications } from "../context/NotificationContext";
+import { useNavigate } from "react-router-dom";
 
 const CheckoutPage = () => {
   const { token, username, userId } = useContext(AuthContext);
+  const { addNotification } = useNotifications();
+  const navigate = useNavigate();
 
   const [cartItems, setCartItems] = useState([]);
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -22,19 +26,30 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [loading, setLoading] = useState(true);
 
-  // Fetch cart items
+  // ✅ Fetch Cart Items
   useEffect(() => {
     const fetchCart = async () => {
       const items = token
         ? await CartService.getCart(token)
-        : JSON.parse(localStorage.getItem("guestCart")) || [];
-      setCartItems(items);
+        : JSON.parse(sessionStorage.getItem("guestCart")) || [];
+
+      const normalizedItems = items.map((item) => ({
+        ...item,
+        imageUrl:
+          item.imageUrl || item.imagePath
+            ? item.imageUrl?.startsWith("http")
+              ? item.imageUrl
+              : `http://localhost:8989${item.imageUrl || item.imagePath}`
+            : "/placeholder.png",
+      }));
+
+      setCartItems(normalizedItems);
       setLoading(false);
     };
     fetchCart();
   }, [token]);
 
-  // Fetch saved addresses for logged-in user
+  // ✅ Fetch Saved Addresses for Logged-in Users
   useEffect(() => {
     const fetchAddresses = async () => {
       if (!userId) return;
@@ -42,56 +57,86 @@ const CheckoutPage = () => {
         const res = await UserService.getAddresses(userId, token);
         setSavedAddresses(res.data || []);
       } catch (err) {
-        console.error("Failed to fetch addresses:", err);
+        console.error(err);
       }
     };
     if (userId) fetchAddresses();
   }, [userId, token]);
 
   const totalPrice = cartItems.reduce(
-    (total, item) => total + (item.productPrice || item.price || 0) * item.quantity,
+    (total, item) =>
+      total + (item.productPrice || item.price || 0) * item.quantity,
     0
   );
 
+  // ✅ Handle Order Placement
   const handlePlaceOrder = async () => {
+    if (cartItems.length === 0)
+      return addNotification("Cart is empty!", "error");
+
     let finalAddress = "";
     let orderPayload = {};
 
+    // ✅ Logged-in User Checkout
     if (userId) {
-      // Logged-in user
       if (selectedAddressId) {
-        const selected = savedAddresses.find(a => a.id === parseInt(selectedAddressId));
-        if (!selected) return alert("Selected address not found!");
+        const selected = savedAddresses.find(
+          (a) => a.id === parseInt(selectedAddressId)
+        );
+        if (!selected)
+          return addNotification("Selected address not found!", "error");
+
         finalAddress = `${selected.houseNumber} ${selected.street}, ${selected.postalCode}, ${selected.country}`;
       } else {
-        const isComplete = Object.values(shippingAddress).every(val => val.toString().trim() !== "");
-        if (!isComplete) return alert("Please fill in all shipping address fields.");
+        // If user enters a new address
+        const isComplete = Object.values(shippingAddress).every(
+          (val) => val?.toString().trim() !== ""
+        );
+        if (!isComplete)
+          return addNotification(
+            "Please fill in all shipping address fields.",
+            "error"
+          );
+
         finalAddress = `${shippingAddress.houseNumber} ${shippingAddress.street}, ${shippingAddress.postalCode}, ${shippingAddress.country}`;
+
+        // ✅ Save new address if user wants or has none
+        if (shippingAddress.primary || savedAddresses.length === 0) {
+          try {
+            const payload = { ...shippingAddress, userId };
+            await UserService.addAddress(userId, payload, token);
+            addNotification("✅ Address saved successfully!", "success");
+          } catch (err) {
+            console.error("Failed to save address:", err);
+            addNotification("⚠️ Could not save address!", "error");
+          }
+        }
       }
 
       orderPayload = {
         shippingAddress: finalAddress,
         paymentMethod,
-        items: cartItems.map(item => ({ productId: item.productId, quantity: item.quantity })),
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
         totalAmount: totalPrice,
       };
+    }
 
-      try {
-        await OrderService.checkout(orderPayload, token);
-        alert("✅ Order placed successfully!");
-        await CartService.clearCart(token);
-        window.location.href = "/";
-      } catch (err) {
-        console.error("Order failed:", err);
-        alert("❌ Failed to place order.");
-      }
-    } else {
-      // Guest user
+    // ✅ Guest Checkout
+    else {
       const isComplete =
         guestInfo.name.trim() &&
         guestInfo.email.trim() &&
-        Object.values(shippingAddress).every(val => val.toString().trim() !== "");
-      if (!isComplete) return alert("Please fill in all guest info and address fields.");
+        Object.values(shippingAddress).every(
+          (val) => val?.toString().trim() !== ""
+        );
+      if (!isComplete)
+        return addNotification(
+          "Please fill in all guest info and address fields.",
+          "error"
+        );
 
       finalAddress = `${shippingAddress.houseNumber} ${shippingAddress.street}, ${shippingAddress.postalCode}, ${shippingAddress.country}`;
       orderPayload = {
@@ -99,19 +144,32 @@ const CheckoutPage = () => {
         guestEmail: guestInfo.email,
         shippingAddress: finalAddress,
         paymentMethod,
-        items: cartItems.map(item => ({ productId: item.productId, quantity: item.quantity })),
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
         totalAmount: totalPrice,
       };
+    }
 
-      try {
-        await OrderService.checkout(orderPayload); // no token
-        alert("✅ Guest order placed successfully!");
-        localStorage.removeItem("guestCart");
-        window.location.href = "/";
-      } catch (err) {
-        console.error("Guest order failed:", err);
-        alert("❌ Failed to place order.");
-      }
+    // ✅ Place Order
+    try {
+      const order = await OrderService.checkout(orderPayload, token);
+      if (userId) await CartService.clearCart(token);
+      else localStorage.removeItem("guestCart");
+
+      addNotification(
+        `✅ Order #${order.id} placed successfully!`,
+        "success"
+      );
+      setTimeout(() => navigate("/"), 2500);
+    } catch (err) {
+      console.error(err);
+      addNotification(
+        `Failed to place order: ${err.message || "Unknown error"}`,
+        "error",
+        5000
+      );
     }
   };
 
@@ -123,6 +181,7 @@ const CheckoutPage = () => {
         Checkout {userId ? `, ${username}` : ""}
       </h2>
 
+      {/* ✅ Guest Info */}
       {!userId && (
         <div className="mb-4">
           <h3 className="font-medium mb-2">Guest Info</h3>
@@ -130,23 +189,28 @@ const CheckoutPage = () => {
             type="text"
             placeholder="Your Name"
             value={guestInfo.name}
-            onChange={e => setGuestInfo({ ...guestInfo, name: e.target.value })}
+            onChange={(e) =>
+              setGuestInfo({ ...guestInfo, name: e.target.value })
+            }
             className="w-full border border-gray-300 rounded p-2 mb-2"
           />
           <input
             type="email"
             placeholder="Your Email"
             value={guestInfo.email}
-            onChange={e => setGuestInfo({ ...guestInfo, email: e.target.value })}
+            onChange={(e) =>
+              setGuestInfo({ ...guestInfo, email: e.target.value })
+            }
             className="w-full border border-gray-300 rounded p-2 mb-2"
           />
         </div>
       )}
 
+      {/* ✅ Saved Addresses */}
       {userId && savedAddresses.length > 0 && (
         <div className="mb-4">
           <h3 className="font-medium mb-2">Select a saved address:</h3>
-          {savedAddresses.map(addr => (
+          {savedAddresses.map((addr) => (
             <label key={addr.id} className="flex items-center gap-2 mb-1">
               <input
                 type="radio"
@@ -155,11 +219,17 @@ const CheckoutPage = () => {
                 checked={selectedAddressId == addr.id}
                 onChange={() => setSelectedAddressId(addr.id)}
               />
-              <span>{addr.houseNumber} {addr.street}, {addr.postalCode}, {addr.country}</span>
+              <span>
+                {addr.houseNumber} {addr.street}, {addr.postalCode},{" "}
+                {addr.country}
+              </span>
             </label>
           ))}
           <button
-            onClick={() => { setShowNewAddressForm(true); setSelectedAddressId(null); }}
+            onClick={() => {
+              setShowNewAddressForm(true);
+              setSelectedAddressId(null);
+            }}
             className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded"
           >
             + Add New Address
@@ -167,28 +237,62 @@ const CheckoutPage = () => {
         </div>
       )}
 
-      {(showNewAddressForm || !userId) && (
+      {/* ✅ No Saved Addresses */}
+      {userId && savedAddresses.length === 0 && (
+        <div className="mb-4 border-t pt-3">
+          <p className="text-gray-700 mb-2">
+            You don’t have any saved addresses yet. Please enter a new one:
+          </p>
+        </div>
+      )}
+
+      {/* ✅ New Address Form */}
+      {(showNewAddressForm ||
+        !userId ||
+        (userId && savedAddresses.length === 0)) && (
         <div className="mb-4 border-t pt-3">
           <h3 className="text-lg font-medium mb-2">Enter shipping address:</h3>
-          {["houseNumber", "street", "postalCode", "country"].map(field => (
+          {["houseNumber", "street", "postalCode", "country"].map((field) => (
             <input
               key={field}
               type="text"
               placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
               value={shippingAddress[field]}
-              onChange={e => setShippingAddress({ ...shippingAddress, [field]: e.target.value })}
+              onChange={(e) =>
+                setShippingAddress({
+                  ...shippingAddress,
+                  [field]: e.target.value,
+                })
+              }
               className="w-full border border-gray-300 rounded p-2 mb-2"
             />
           ))}
+          {userId && (
+            <label className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                checked={shippingAddress.primary}
+                onChange={(e) =>
+                  setShippingAddress({
+                    ...shippingAddress,
+                    primary: e.target.checked,
+                  })
+                }
+              />
+              <span className="text-sm text-gray-600">
+                Save this address for future orders
+              </span>
+            </label>
+          )}
         </div>
       )}
 
-      {/* Payment Method */}
+      {/* ✅ Payment Method */}
       <div className="mb-4">
         <label className="block text-gray-600 mb-1">Payment Method:</label>
         <select
           value={paymentMethod}
-          onChange={e => setPaymentMethod(e.target.value)}
+          onChange={(e) => setPaymentMethod(e.target.value)}
           className="w-full border border-gray-300 rounded p-2"
         >
           <option value="card">Credit/Debit Card</option>
@@ -196,23 +300,43 @@ const CheckoutPage = () => {
         </select>
       </div>
 
-      {/* Order Summary */}
+      {/* ✅ Order Summary */}
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-2">Order Summary:</h3>
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {cartItems.map((item, idx) => (
-            <li key={idx} className="text-sm flex justify-between">
-              <span>{item.name || item.productName} x {item.quantity}</span>
-              <span>${((item.productPrice || item.price) * item.quantity).toFixed(2)}</span>
+            <li
+              key={idx}
+              className="flex items-center justify-between gap-3 border-b pb-2"
+            >
+              <div className="flex items-center gap-3">
+                <img
+                  src={item.imageUrl}
+                  alt={item.name || item.productName}
+                  className="w-12 h-12 object-cover rounded-md border"
+                  onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">
+                    {item.name || item.productName}
+                  </p>
+                  <p className="text-xs text-gray-500">x {item.quantity}</p>
+                </div>
+              </div>
+              <span className="text-sm font-semibold text-gray-800">
+                ₹{((item.productPrice || item.price) * item.quantity).toFixed(2)}
+              </span>
             </li>
           ))}
         </ul>
-        <div className="text-right font-bold mt-2">Total: ${totalPrice.toFixed(2)}</div>
+        <div className="text-right font-bold mt-3 text-gray-800">
+          Total: ₹{totalPrice.toFixed(2)}
+        </div>
       </div>
 
       <button
         onClick={handlePlaceOrder}
-        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
       >
         Confirm & Place Order
       </button>

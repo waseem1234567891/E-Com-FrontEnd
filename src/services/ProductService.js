@@ -10,6 +10,14 @@ const addProduct = (formData) => {
     }
   });
 };
+const getProductById = (productId) => {
+  return axios.get(`${API_BASE_URL}/${productId}`,  {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
+};
+
 
 const updateProduct = (id,formData) => {
   return axios.put(`${API_BASE_URL}/edit/${id}`, formData, {
@@ -30,10 +38,14 @@ const deleteProduct=async(productId,token)=>{
 };
 
 
-const getProductsPaginated=(page, size, categoryId = null)=> {
-  let url = `${API_BASE_URL}/paginated?page=${page}&size=${size}`;
+const getProductsPaginated=(page, size, categoryId = null,keyword=null)=> {
+  let url = `${API_BASE_URL}/allproduct?page=${page}&size=${size}`;
   if (categoryId) {
     url += `&categoryId=${categoryId}`;
+  }
+  if(keyword)
+  {
+    url +=`&keyword=${keyword}`
   }
   return axios.get(url);
 };
@@ -43,7 +55,8 @@ const ProductService = {
   addProduct,
   getProductsPaginated,
   deleteProduct,
-  updateProduct
+  updateProduct,
+  getProductById
 };
 
 export default ProductService;
