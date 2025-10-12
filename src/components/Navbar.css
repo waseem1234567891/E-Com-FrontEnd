@@ -1,3 +1,4 @@
+/* === Navbar Base === */
 .navbar {
   background-color: #1a73e8;
   color: white;
@@ -5,6 +6,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 50;
 }
 
 .navbar-container {
@@ -18,16 +21,25 @@
   margin-right: 15px;
   color: white;
   text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
 }
 
 .navbar-link:hover {
   text-decoration: underline;
+  opacity: 0.9;
 }
 
+/* === Username & Logout === */
 .navbar-username {
   margin-right: 15px;
   font-weight: bold;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.navbar-username:hover {
+  opacity: 0.8;
 }
 
 .logout-button {
@@ -37,8 +49,74 @@
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
 }
 
 .logout-button:hover {
   background-color: #c82333;
+}
+
+/* === Notification Bell === */
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  background: red;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* === Dropdown === */
+.notification-dropdown {
+  position: absolute;
+  right: 0;
+  margin-top: 5px;
+  width: 250px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  color: black !important; /* ✅ fix invisible text */
+}
+
+.notification-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  color: black !important; /* ✅ ensure visible text */
+  transition: background-color 0.2s ease;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+/* === See All Link === */
+.notification-dropdown a {
+  display: block;
+  text-align: center;
+  padding: 8px 0;
+  color: #1a73e8;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  border-top: 1px solid #eee;
+}
+
+.notification-dropdown a:hover {
+  text-decoration: underline;
 }

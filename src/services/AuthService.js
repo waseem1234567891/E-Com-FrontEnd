@@ -28,6 +28,12 @@ const getAllUsers = async (token) => {
   return axios.get(`${API_URL}/allusers`, config);
 };
 
+// --- User Management ---
+const getAllUsersByPagination = async (token,page=0,size=5) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  return axios.get(`${API_URL}/alluser?page=${page}&size=${size}`, config);
+};
+
 const deleteUser = async (token, userId) => {
   const config = { headers: { Authorization: `Bearer ${token}` } };
   return axios.delete(`${API_URL}/user/${userId}`, config);
@@ -68,4 +74,5 @@ export default {
   forgotUsername,
   forgotPassword,
   resetPassword,
+  getAllUsersByPagination,
 };

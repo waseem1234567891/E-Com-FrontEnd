@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import ProductService from '../../services/ProductService';
 import ProCatService from '../../services/ProCatService';
 import { AuthContext } from "../../context/-AuthContext";
@@ -8,7 +9,7 @@ const ProductManagement = () => {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', price: '', categoryId: '' });
+  const [formData, setFormData] = useState({ name: '', price: '', categoryId: '', tags: [], stock: 0 });
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -16,6 +17,7 @@ const ProductManagement = () => {
   const [proCategories, setProCategories] = useState([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const { token } = useContext(AuthContext);
 
   const fetchProducts = async (pageNumber = 0, categoryId = selectedCategory) => {
@@ -67,7 +69,9 @@ const ProductManagement = () => {
       data.append('name', formData.name);
       data.append('price', formData.price);
       data.append('categoryId', formData.categoryId);
+      data.append('stock', formData.stock);
       if (imageFile) data.append('image', imageFile);
+      data.append('tags', JSON.stringify(formData.tags));
 
       if (editingId) {
         await ProductService.updateProduct(editingId, data);
@@ -75,7 +79,7 @@ const ProductManagement = () => {
         await ProductService.addProduct(data);
       }
 
-      setFormData({ name: '', price: '', categoryId: '' });
+      setFormData({ name: '', price: '', categoryId: '', tags: [], stock: 0 });
       setImageFile(null);
       setPreviewUrl('');
       setEditingId(null);
@@ -91,9 +95,11 @@ const ProductManagement = () => {
       name: product.name || '',
       price: product.price || '',
       categoryId: product.categoryId || '',
+      tags: product.tags || [],
+      stock: product.stock || 0,
     });
     setEditingId(product.id);
-    setPreviewUrl(product.imagePath ? `http://localhost:8989${product.imagePath}` : '');
+    setPreviewUrl(product.imageUrl ? `http://localhost:8989${product.imageUrl}` : '');
     setShowModal(true);
   };
 
@@ -122,7 +128,7 @@ const ProductManagement = () => {
         <button
           style={{ ...styles.button, backgroundColor: '#007bff' }}
           onClick={() => {
-            setFormData({ name: '', price: '', categoryId: '' });
+            setFormData({ name: '', price: '', categoryId: '', tags: [], stock: 0 });
             setImageFile(null);
             setPreviewUrl('');
             setEditingId(null);
@@ -149,8 +155,11 @@ const ProductManagement = () => {
             <th>ID</th>
             <th>Name</th>
             <th>Price ($)</th>
+            <th>Stock</th>
             <th>Image</th>
+            <th>Tags</th>
             <th>Actions</th>
+            <th>Reviews</th>
           </tr>
         </thead>
         <tbody>
@@ -160,10 +169,11 @@ const ProductManagement = () => {
                 <td>{product.id}</td>
                 <td>{product.name}</td>
                 <td>{product.price}</td>
+                <td>{product.stock}</td>
                 <td>
-                  {product.imagePath ? (
+                  {product.imageUrl ? (
                     <img
-                      src={`http://localhost:8989${product.imagePath}`}
+                      src={`http://localhost:8989${product.imageUrl}`}
                       alt={product.name}
                       style={{ width: '60px', height: '60px', objectFit: 'cover' }}
                     />
@@ -172,14 +182,40 @@ const ProductManagement = () => {
                   )}
                 </td>
                 <td>
+                  {product.tags && product.tags.length ? (
+                    product.tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          marginRight: '6px',
+                          background: '#f1f1f1',
+                          padding: '2px 6px',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span>No Tags</span>
+                  )}
+                </td>
+                <td>
                   <button style={styles.editButton} onClick={() => handleEdit(product)}>Edit</button>
                   <button style={styles.deleteButton} onClick={() => handleDelete(product.id)}>Delete</button>
+                </td>
+                <td>
+                   <Link to={`/admin-dashboard/product-reviews/${product.id}`}>
+    <button style={{ ...styles.button, backgroundColor: '#ffc107' }}>
+      View Reviews
+    </button>
+  </Link>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="5" align="center">No products available.</td>
+              <td colSpan="8" align="center">No products available.</td>
             </tr>
           )}
         </tbody>
@@ -218,6 +254,14 @@ const ProductManagement = () => {
               onChange={handleInputChange}
               style={modalStyles.input}
             />
+            <input
+              type="number"
+              name="stock"
+              placeholder="Stock Quantity"
+              value={formData.stock}
+              onChange={handleInputChange}
+              style={modalStyles.input}
+            />
             <select
               name="categoryId"
               value={formData.categoryId}
@@ -231,6 +275,56 @@ const ProductManagement = () => {
                 </option>
               ))}
             </select>
+
+            {/* Tag Input */}
+            <input
+              type="text"
+              placeholder="Enter a tag and press Enter"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && tagInput.trim()) {
+                  if (!formData.tags.includes(tagInput.trim())) {
+                    setFormData({ ...formData, tags: [...formData.tags, tagInput.trim()] });
+                  }
+                  setTagInput('');
+                  e.preventDefault();
+                }
+              }}
+              style={modalStyles.input}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '0.5rem' }}>
+              {formData.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  style={{
+                    backgroundColor: '#e0e0e0',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  {tag}
+                  <button
+                    onClick={() => {
+                      setFormData({ ...formData, tags: formData.tags.filter((_, i) => i !== index) });
+                    }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      color: 'red',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+
             <input
               type="file"
               name="image"

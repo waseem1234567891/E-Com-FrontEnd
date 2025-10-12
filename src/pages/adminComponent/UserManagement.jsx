@@ -7,11 +7,16 @@ const UserManagement = () => {
   const { token } = useContext(AuthContext);
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const pageSize = 5;
 
-  const fetchAllUsers = async () => {
+  const fetchAllUsers = async (pageNumber=0) => {
     try {
-      const response = await AuthService.getAllUsers(token);
-      setUsers(response.data || []);
+      const response = await AuthService.getAllUsersByPagination(token,pageNumber,pageSize);
+      setUsers(response.data.content || []);
+      setTotalPages(response.data.totalPages);
+      setPage(response.data.number);
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -46,56 +51,89 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    fetchAllUsers();
+    fetchAllUsers(0);
   }, []);
 
-  return (
+   return (
     <div className="user-management">
       <h2>User Management</h2>
       <p>Here you can manage users: view, edit, delete.</p>
 
       {users.length > 0 ? (
-        <div className="table-container">
-          <table className="user-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th> {/* Added status column */}
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
-                  <td>{user.username}</td>
-                  <td>{user.email}</td>
-                  <td>{user.role}</td>
-                  <td
-                    style={{
-                      fontWeight: "bold",
-                      color: user.status === "ACTIVE" ? "green" : "red",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {user.status}
-                  </td>
-                  <td>
-                    <button className="edit-btn" onClick={() => handleEdit(user)}>
-                      Edit
-                    </button>
-                    <button className="delete-btn" onClick={() => handleDelete(user.id)}>
-                      Delete
-                    </button>
-                  </td>
+        <>
+          <div className="table-container">
+            <table className="user-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.id}</td>
+                    <td>{user.username}</td>
+                    <td>{user.email}</td>
+                    <td>{user.role}</td>
+                    <td
+                      style={{
+                        fontWeight: "bold",
+                        color: user.status === "ACTIVE" ? "green" : "red",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {user.status}
+                    </td>
+                    <td>
+                      <button className="edit-btn" onClick={() => handleEdit(user)}>
+                        Edit
+                      </button>
+                      <button className="delete-btn" onClick={() => handleDelete(user.id)}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+         <div className="flex items-center justify-center gap-4 mt-6">
+  <button
+    onClick={() => fetchAllUsers(page - 1)}
+    disabled={page === 0}
+    className={`px-4 py-2 rounded-lg font-semibold transition 
+      ${page === 0 
+        ? "bg-gray-300 text-gray-600 cursor-not-allowed" 
+        : "bg-blue-500 hover:bg-blue-600 text-white"}`}
+  >
+    Prev
+  </button>
+
+  <span className="px-3 py-1 text-sm font-bold bg-gray-100 rounded-lg">
+    Page {page + 1} of {totalPages}
+  </span>
+
+  <button
+    onClick={() => fetchAllUsers(page + 1)}
+    disabled={page === totalPages - 1}
+    className={`px-4 py-2 rounded-lg font-semibold transition 
+      ${page === totalPages - 1 
+        ? "bg-gray-300 text-gray-600 cursor-not-allowed" 
+        : "bg-green-500 hover:bg-green-600 text-white"}`}
+  >
+    Next
+  </button>
+</div>
+
+
+        </>
       ) : (
         <p>No users found.</p>
       )}

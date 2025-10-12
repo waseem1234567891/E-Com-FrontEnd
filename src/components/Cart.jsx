@@ -1,8 +1,15 @@
+// src/components/Cart.jsx
 import React, { useEffect, useState, useContext } from "react";
-import CartService from "../services/CartService";
-import { useCartContext } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { useCartContext } from "../context/CartContext";
 import { AuthContext } from "../context/-AuthContext";
+import CartService from "../services/CartService";
+import {
+  getGuestCart,
+  clearGuestCart,
+  changeGuestCartQuantity,
+  removeFromGuestCart
+} from "../util/guestCart";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -10,14 +17,30 @@ const Cart = () => {
   const navigate = useNavigate();
   const { token, userId } = useContext(AuthContext);
 
-  // Load cart from API or localStorage
+  // Load cart
   const fetchCart = async () => {
-    try {
-      const items = await CartService.getCart(token);
-      setCartItems(items);
-    } catch (error) {
-      console.error("Error loading cart:", error);
+    let items = [];
+    if (token) {
+      try {
+        items = await CartService.getCart(token);
+      } catch (err) {
+        console.error("Failed to fetch cart:", err);
+      }
+    } else {
+      items = getGuestCart();
     }
+
+    // Normalize image URL
+    const normalizedItems = items.map(item => ({
+      ...item,
+      imageUrl: item.imageUrl || item.imagePath
+        ? (item.imageUrl?.startsWith("http") 
+            ? item.imageUrl 
+            : `http://localhost:8989${item.imageUrl || item.imagePath}`)
+        : "/placeholder.png"
+    }));
+
+    setCartItems(normalizedItems);
   };
 
   useEffect(() => {
@@ -26,85 +49,72 @@ const Cart = () => {
 
   // Delete item
   const handleDeleteItem = async (productId) => {
-    try {
-      const updated = await CartService.removeFromCart(productId, token);
-      setCartItems(updated);
+    if (token) {
+      try {
+        const updated = await CartService.removeFromCart(productId, token);
+        triggerCartRefresh();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      removeFromGuestCart(productId);
       triggerCartRefresh();
-    } catch (error) {
-      console.error("Failed to delete item:", error);
     }
   };
 
   // Clear cart
   const handleClearCart = async () => {
-    try {
-      await CartService.clearCart(token);
-      setCartItems([]);
+    if (token) {
+      try {
+        await CartService.clearCart(token);
+        triggerCartRefresh();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      clearGuestCart();
       triggerCartRefresh();
-    } catch (error) {
-      console.error("Failed to clear cart:", error);
     }
   };
 
   // Increase quantity
   const handleIncrease = async (productId) => {
-    const updatedCart = cartItems.map((item) => {
-      if (item.productId === productId) {
-        const newQty = item.quantity + 1;
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    });
-
-    setCartItems(updatedCart);
-
-    // Update backend if logged in
-    if (token) {
-      try {
-        await CartService.addToCart(productId, userId, 1, token);
-        triggerCartRefresh();
-      } catch (error) {
-        console.error("Failed to increase quantity:", error);
-      }
-    } else {
-      // Guest mode: update localStorage
-      localStorage.setItem("guestCart", JSON.stringify(updatedCart));
+    const item = cartItems.find(i => i.productId === productId);
+    if (!item) return;
+    if (item.quantity >= (item.stock || 999)) {
+      alert("⚠️ Cannot exceed available stock!");
+      return;
     }
+
+    if (token) {
+      await CartService.addToCart(productId, userId, 1, token);
+    } else {
+      changeGuestCartQuantity(productId, 1);
+    }
+    triggerCartRefresh();
   };
 
   // Decrease quantity
   const handleDecrease = async (productId) => {
-    const updatedCart = cartItems
-      .map((item) => {
-        if (item.productId === productId) {
-          const newQty = item.quantity - 1;
-          return newQty > 0 ? { ...item, quantity: newQty } : null;
-        }
-        return item;
-      })
-      .filter(Boolean); // remove nulls
-
-    setCartItems(updatedCart);
+    const item = cartItems.find(i => i.productId === productId);
+    if (!item) return;
 
     if (token) {
-      try {
-        if (updatedCart.find((item) => item.productId === productId)) {
-          await CartService.addToCart(productId, userId, -1, token);
-        } else {
-          await CartService.removeFromCart(productId, token);
-        }
-        triggerCartRefresh();
-      } catch (error) {
-        console.error("Failed to decrease quantity:", error);
+      if (item.quantity === 1) {
+        await CartService.removeFromCart(productId, token);
+      } else {
+        await CartService.addToCart(productId, userId, -1, token);
       }
     } else {
-      localStorage.setItem("guestCart", JSON.stringify(updatedCart));
+      changeGuestCartQuantity(productId, -1);
     }
+    triggerCartRefresh();
   };
 
+  // Checkout
   const handleCheckout = () => navigate("/checkout");
 
-  const totalPrice = (cartItems || []).reduce(
+  const totalPrice = cartItems.reduce(
     (total, item) => total + (item.productPrice || 0) * (item.quantity || 1),
     0
   );
@@ -126,9 +136,10 @@ const Cart = () => {
                 className="flex items-center justify-between bg-gray-50 p-3 rounded-xl shadow-sm border border-gray-200"
               >
                 <img
-                  src={`http://localhost:8989${item.imagePath}`}
+                  src={item.imageUrl}
                   alt={item.name || item.productName}
                   className="w-12 h-12 rounded object-cover mr-3"
+                  onError={(e) => (e.currentTarget.src = "/placeholder.png")}
                 />
                 <div className="flex-1">
                   <div className="flex justify-between items-center">
@@ -154,6 +165,11 @@ const Cart = () => {
                   <div className="text-xs text-gray-600 mt-1">
                     Price: ${item.productPrice?.toFixed(2) || "0.00"}
                   </div>
+                  {item.stock !== undefined && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      Stock: {item.stock}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => handleDeleteItem(item.productId)}

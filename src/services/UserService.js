@@ -8,8 +8,8 @@ const getAddresses = (userId, token) => {
   });
 };
 
-const addAddress = (address, token) => {
-  return axios.post(`${API_URL}`, address, {
+const addAddress = (userId,address, token) => {
+  return axios.post(`${API_URL}/${userId}`, address, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };

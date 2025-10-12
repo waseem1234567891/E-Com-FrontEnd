@@ -24,7 +24,7 @@ const AdminLogin = () => {
         try {
             const response = await AuthService.adminlogin(formData.username, formData.password);
            // localStorage.setItem("token", response.data.token);
-            login(response.data.userName,response.data.userId,response.data.token)
+            login(response.data.userName,response.data.userId,response.data.token,response.data.role)
             console.log(response.data.token)
             navigate('/admin-dashboard');
            // setMessage(`Welcome, ${response.data.username}!`);

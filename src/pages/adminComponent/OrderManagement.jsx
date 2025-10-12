@@ -1,23 +1,40 @@
+// src/pages/adminComponent/OrderManagement.jsx
 import { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import OrderService from "../../services/OrderService";
 import { AuthContext } from "../../context/-AuthContext";
+import { useAdminUI } from "../../context/AdminUIContext";
 
 const OrderManagement = () => {
+  const { token, role } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const { setActiveMenu } = useAdminUI();
+
   const [orders, setOrders] = useState([]);
-  const { token } = useContext(AuthContext);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
 
-  const fetchOrders = async () => {
+  // Fetch orders with optional filters
+  const fetchOrders = async (pageNumber = 0, status = selectedStatus, search = searchQuery) => {
     try {
-      const response = await OrderService.getAllOrders(token);
-      setOrders(response.data || []);
+      const response = await OrderService.getAllOrders(token, pageNumber, status, search);
+      const data = response.data;
+      setOrders(data.content || []);
+      setTotalPages(data.totalPages || 1);
+      setPage(data.number || pageNumber);
     } catch (error) {
       console.error("Error loading orders:", error);
     }
   };
+
+  useEffect(() => {
+    fetchOrders(0);
+  }, []);
 
   const handleOpenModal = (order) => {
     setSelectedOrder(order);
@@ -29,39 +46,83 @@ const OrderManagement = () => {
     try {
       await OrderService.updateOrderStatus(selectedOrder.id, newStatus, token);
       setShowModal(false);
-      fetchOrders();
+      fetchOrders(page);
     } catch (error) {
       console.error("Error updating status:", error);
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const handlePageChange = (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) fetchOrders(newPage);
+  };
+
+  const handleFilterChange = (e) => {
+    const value = e.target.value;
+    setSelectedStatus(value);
+    fetchOrders(0, value, searchQuery);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchOrders(0, selectedStatus, searchQuery);
+  };
+
+  // Back to dashboard button
+  const handleBackToDashboard = () => {
+    if (role === "ADMIN") {
+      setActiveMenu("orders");
+      navigate("/admin-dashboard", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
+  };
 
   return (
     <div className="p-6">
       <h2 className="text-3xl font-bold mb-2 text-gray-800">Order Management</h2>
-      <p className="mb-6 text-gray-600">View and update customer orders.</p>
+      <button
+        onClick={handleBackToDashboard}
+        className="mb-4 text-blue-600 hover:underline"
+      >
+        ← Back to Dashboard
+      </button>
 
-      {/* Filter */}
-      <div className="mb-4">
-        <label htmlFor="statusFilter" className="mr-2 text-gray-700 font-medium">
-          Filter by Status:
-        </label>
-        <select
-          id="statusFilter"
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1"
-        >
-          <option value="">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="PROCESSING">Processing</option>
-          <option value="SHIPPED">Shipped</option>
-          <option value="DELIVERED">Delivered</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
+      {/* Search & Filter */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <form onSubmit={handleSearch} className="flex items-center space-x-2">
+          <input
+            type="text"
+            placeholder="Search by Order ID, Username, Guest..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1 w-64"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
+          >
+            Search
+          </button>
+        </form>
+
+        <div>
+          <label htmlFor="statusFilter" className="mr-2 text-gray-700 font-medium">
+            Filter by Status:
+          </label>
+          <select
+            id="statusFilter"
+            value={selectedStatus}
+            onChange={handleFilterChange}
+            className="border border-gray-300 rounded px-3 py-1"
+          >
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="SHIPPED">Shipped</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
       </div>
 
       {/* Orders Table */}
@@ -76,49 +137,41 @@ const OrderManagement = () => {
               <th className="px-4 py-3 border">Payment</th>
               <th className="px-4 py-3 border">Shipping</th>
               <th className="px-4 py-3 border">Date</th>
-              <th className="px-4 py-3 border">Items</th>
               <th className="px-4 py-3 border">Action</th>
             </tr>
           </thead>
           <tbody>
             {orders.length > 0 ? (
-              orders
-                .filter((order) => !selectedStatus || order.status === selectedStatus)
-                .map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 border">{order.id}</td>
-                    <td className="px-4 py-3 border">{order.userName}</td>
-                    <td className="px-4 py-3 border">₹{order.totalAmount}</td>
-                    <td className="px-4 py-3 border">{order.status}</td>
-                    <td className="px-4 py-3 border">{order.paymentStatus}</td>
-                    <td className="px-4 py-3 border">{order.shippingAddress}</td>
-                    <td className="px-4 py-3 border">
-                      {new Date(order.orderDate).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 border">
-                      <ul className="list-disc pl-4 space-y-1">
-                        {order.items?.map((item, index) => (
-                          <li key={index}>
-                            <span className="font-medium">{item.product?.name}</span> ×{" "}
-                            {item.quantity} – ₹
-                            {item.price ?? item.product?.price ?? "N/A"}
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                    <td className="px-4 py-3 border">
-                      <button
-                        onClick={() => handleOpenModal(order)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                      >
-                        Update
-                      </button>
-                    </td>
-                  </tr>
-                ))
+              orders.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 border">{order.id}</td>
+                  <td className="px-4 py-3 border">
+                    {order.userName || order.guestName || "Guest"}
+                  </td>
+                  <td className="px-4 py-3 border">₹{order.totalAmount}</td>
+                  <td className="px-4 py-3 border">{order.status}</td>
+                  <td className="px-4 py-3 border">{order.paymentStatus}</td>
+                  <td className="px-4 py-3 border">{order.shippingAddress}</td>
+                  <td className="px-4 py-3 border">{new Date(order.orderDate).toLocaleString()}</td>
+                  <td className="px-4 py-3 border flex flex-col gap-1">
+                    <button
+                      onClick={() => handleOpenModal(order)}
+                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    >
+                      Update
+                    </button>
+                    <button
+                      onClick={() => navigate(`/order/${order.id}`)}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
-                <td colSpan="9" className="text-center py-4 text-gray-500">
+                <td colSpan="8" className="text-center py-4 text-gray-500">
                   No orders found.
                 </td>
               </tr>
@@ -127,7 +180,28 @@ const OrderManagement = () => {
         </table>
       </div>
 
-      {/* Modal */}
+      {/* Pagination */}
+      <div className="flex justify-center mt-4 space-x-2">
+        <button
+          onClick={() => handlePageChange(page - 1)}
+          disabled={page === 0}
+          className={`px-3 py-1 rounded border ${page === 0 ? "text-gray-400 border-gray-300" : "hover:bg-gray-100"}`}
+        >
+          Previous
+        </button>
+        <span className="px-3 py-1 text-gray-700">
+          Page {page + 1} of {totalPages}
+        </span>
+        <button
+          onClick={() => handlePageChange(page + 1)}
+          disabled={page + 1 >= totalPages}
+          className={`px-3 py-1 rounded border ${page + 1 >= totalPages ? "text-gray-400 border-gray-300" : "hover:bg-gray-100"}`}
+        >
+          Next
+        </button>
+      </div>
+
+      {/* Status Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
