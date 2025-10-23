@@ -12,25 +12,18 @@ const Navbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
-  // Keep unread count updated
+  // 🧮 Update unread count
   useEffect(() => {
     if (!dropdownOpen) setUnreadCount(notifications.length);
   }, [notifications, dropdownOpen]);
 
-  // Debug log (optional)
-  useEffect(() => {
-    console.log("🔔 Notifications updated:", notifications);
-  }, [notifications]);
-
   const handleLogout = () => {
     logout();
-    if (role === "ADMIN") navigate("/admin-login");
-    else navigate("/login");
+    navigate(role === "ADMIN" ? "/admin-login" : "/login");
   };
 
   const handleUserClick = () => {
-    if (role === "ADMIN") navigate("/admin-dashboard");
-    else navigate("/dashboard");
+    navigate(role === "ADMIN" ? "/admin-dashboard" : "/dashboard");
   };
 
   const toggleDropdown = () => {
@@ -38,12 +31,17 @@ const Navbar = () => {
     if (!dropdownOpen) setUnreadCount(0);
   };
 
+  // 🧠 Separate notifications by source
+  const adminNotifs = notifications.filter((n) => n.from === "admin");
+  const userNotifs = notifications.filter((n) => n.from !== "admin");
+
+  const sortedNotifications = [...notifications].sort((a, b) => b.id - a.id);
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
         {/* ==== LEFT LINKS ==== */}
         <div className="navbar-links">
-          {/* Dynamic Home Link */}
           <Link
             to={role === "ADMIN" ? "/admin-dashboard" : "/"}
             className="navbar-link"
@@ -51,14 +49,12 @@ const Navbar = () => {
             Home
           </Link>
 
-          {/* Regular users can register */}
           {role !== "ADMIN" && (
             <Link to="/register" className="navbar-link">
               Register
             </Link>
           )}
 
-          {/* Show login only if not logged in */}
           {!username && (
             <Link to="/login" className="navbar-link">
               Login
@@ -72,10 +68,8 @@ const Navbar = () => {
             <div className="relative">
               <button onClick={toggleDropdown} className="navbar-link relative">
                 🔔
-                {(unreadCount > 0 || notifications.length > 0) && (
-                  <span className="notification-badge">
-                    {unreadCount || notifications.length}
-                  </span>
+                {unreadCount > 0 && (
+                  <span className="notification-badge">{unreadCount}</span>
                 )}
               </button>
 
@@ -85,18 +79,57 @@ const Navbar = () => {
                   key={notifications.map((n) => n.id).join("-")}
                   className="notification-dropdown"
                 >
-                  {notifications.length === 0 ? (
+                  {sortedNotifications.length === 0 ? (
                     <p className="text-gray-500 p-2">No notifications</p>
                   ) : (
                     <ul>
-                      {[...notifications]
-                        .sort((a, b) => b.id - a.id)
-                        .slice(0, 5)
-                        .map((n) => (
-                          <li key={n.id} className="notification-item">
-                            {n.message}
-                          </li>
-                        ))}
+                      {sortedNotifications.slice(0, 6).map((n) => (
+                        <li
+                          key={n.id}
+                          className={`notification-item ${n.type || ""}`}
+                          style={{
+                            backgroundColor:
+                              n.from === "admin" ? "#fff7e6" : "white",
+                            borderLeft:
+                              n.from === "admin"
+                                ? "4px solid #ff9800"
+                                : "4px solid #2196f3",
+                          }}
+                        >
+                          {n.link ? (
+                            n.link.startsWith("http") ? (
+                              <a
+                                href={n.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="notification-link"
+                                onClick={() => setDropdownOpen(false)}
+                              >
+                                {n.from === "admin" && (
+                                  <strong>[ADMIN] </strong>
+                                )}
+                                {n.message}
+                              </a>
+                            ) : (
+                              <Link
+                                to={n.link}
+                                className="notification-link"
+                                onClick={() => setDropdownOpen(false)}
+                              >
+                                {n.from === "admin" && (
+                                  <strong>[ADMIN] </strong>
+                                )}
+                                {n.message}
+                              </Link>
+                            )
+                          ) : (
+                            <span>
+                              {n.from === "admin" && <strong>[ADMIN] </strong>}
+                              {n.message}
+                            </span>
+                          )}
+                        </li>
+                      ))}
                     </ul>
                   )}
                   <Link
@@ -128,7 +161,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* === Inline dropdown styles === */}
+      {/* === Inline Styles === */}
       <style>{`
         .notification-badge {
           position: absolute;
@@ -148,7 +181,7 @@ const Navbar = () => {
           position: absolute;
           right: 0;
           margin-top: 5px;
-          width: 250px;
+          width: 270px;
           max-height: 300px;
           overflow-y: auto;
           background: white;
@@ -158,12 +191,19 @@ const Navbar = () => {
           z-index: 9999;
         }
         .notification-item {
-          padding: 8px 12px;
+          padding: 8px 10px;
           border-bottom: 1px solid #eee;
-          color: #333;
+          font-size: 14px;
         }
         .notification-item:last-child {
           border-bottom: none;
+        }
+        .notification-link {
+          text-decoration: none;
+          color: inherit;
+        }
+        .notification-link:hover {
+          text-decoration: underline;
         }
       `}</style>
     </nav>

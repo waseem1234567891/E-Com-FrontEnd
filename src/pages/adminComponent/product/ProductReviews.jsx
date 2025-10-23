@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import ProductService from "../../services/ProductService";
-import ReviewService from "../../services/ReviewService";
-import { useAdminUI } from "../../context/AdminUIContext";
+import ProductService from "../../../services/ProductService";
+import ReviewService from "../../../services/ReviewService";
+import { useAdminUI } from "../../../context/AdminUIContext";
 import { useNavigate } from "react-router-dom";
 
 const ProductReviews = () => {

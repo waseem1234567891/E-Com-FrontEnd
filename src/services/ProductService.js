@@ -27,6 +27,19 @@ const updateProduct = (id,formData) => {
   });
 };
 
+// 🧱 Add Stock (new)
+const addStock = (productId, stockToAdd, token) => {
+  return axios.post(
+    `${API_BASE_URL}/addstock/${productId}?stock=${stockToAdd}`
+    ,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
 
 const deleteProduct=async(productId,token)=>{
   const config = {
@@ -56,7 +69,8 @@ const ProductService = {
   getProductsPaginated,
   deleteProduct,
   updateProduct,
-  getProductById
+  getProductById,
+   addStock, // ✅ must be here
 };
 
 export default ProductService;

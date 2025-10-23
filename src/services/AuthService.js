@@ -29,9 +29,15 @@ const getAllUsers = async (token) => {
 };
 
 // --- User Management ---
-const getAllUsersByPagination = async (token,page=0,size=5) => {
+const getAllUsersByPagination = async (token,page=0,size=5,search="") => {
   const config = { headers: { Authorization: `Bearer ${token}` } };
-  return axios.get(`${API_URL}/alluser?page=${page}&size=${size}`, config);
+  
+   // include search term if provided
+  const url = `${API_URL}/alluser?page=${page}&size=${size}${
+    search ? `&search=${encodeURIComponent(search)}` : ""
+  }`;
+
+  return axios.get(url, config);
 };
 
 const deleteUser = async (token, userId) => {
@@ -63,6 +69,11 @@ const resetPassword = (token, newPassword) => {
   return axios.post(`${API_URL}/reset-password`, { token, newPassword });
 };
 
+const getUserDetails = (token, userId) => {
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  return axios.get(`${API_URL}/user/${userId}`, config);
+};
+
 export default {
   register,
   login,
@@ -75,4 +86,5 @@ export default {
   forgotPassword,
   resetPassword,
   getAllUsersByPagination,
+  getUserDetails
 };
