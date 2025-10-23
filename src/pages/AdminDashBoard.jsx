@@ -2,9 +2,9 @@
 import React, { useEffect, useState, useContext } from 'react';
 import DashboardService from '../services/DashboardService';
 import { useNavigate } from 'react-router-dom';
-import UserManagement from './adminComponent/UserManagement';
-import ProductManagement from './adminComponent/ProductManagement';
-import OrderManagement from './adminComponent/OrderManagement';
+import UserManagement from './adminComponent/user/UserManagement';
+import ProductManagement from './adminComponent/product/ProductManagement';
+import OrderManagement from './adminComponent/order/OrderManagement';
 import SalesReports from '../components/SalesReports';
 import UserActivityOverview from '../pages/adminComponent/UserActivityOverview';
 import InventoryOverview from '../pages/adminComponent/InventoryOverview'; // ✅ NEW

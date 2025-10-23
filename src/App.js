@@ -7,6 +7,8 @@ import { ProductProvider } from "./context/ProductContext";
 import { CartProvider } from "./context/CartContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { AdminUIProvider } from "./context/AdminUIContext";
+import { UserProvider } from "./context/UserUIContext";
+import { LocalNotificationProvider } from "./context/LocalNotificationContext";
 
 import Navbar from "./components/Navbar";
 import NotificationToasts from "./pages/NotificationToasts";
@@ -17,16 +19,23 @@ import Login from "./components/Auth/Login";
 import AdminLogin from "./components/Auth/AdminLogin";
 import ForgetUsernameAndPassword from "./pages/ForgetUsernameAndPassword";
 import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/DashBoard";
+import Dashboard from "./pages/userdashboard/DashBoard";
 import AdminDashBoard from "./pages/AdminDashBoard";
-import CheckoutPage from "./pages/CheckoutPage";
+import CheckoutPage from "./pages/checkout/CheckoutPage";
 import NotificationCenterPage from "./pages/NotificationCenter";
 import OrderDetails from "./pages/OrderDetails";
-import ProductReviews from "./pages/adminComponent/ProductReviews";
+import ProductReviews from "./pages/adminComponent/product/ProductReviews";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UserDetail from "./pages/adminComponent/UserDetail";
+import OrderDetailForAdmin from "./pages/adminComponent/OrderDetailForUser";
+import OrderDetailForUser from "./components/OrderDetailForUser";
+import ProductDetail from "./pages/ProductDetail";
+import ProductDetailForAdmin from "./pages/adminComponent/ProductDetailForAdmin";
+import ProductStockHistory from "./pages/adminComponent/product/ProductStockHistory";
 
 const App = () => {
   return (
+    <LocalNotificationProvider>
     <AuthProvider>
       <ProductProvider>
         <CartProvider>
@@ -38,6 +47,7 @@ const App = () => {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home />} />
+                <Route path="/product/:id" element={<ProductDetail />} /> 
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin-login" element={<AdminLogin />} />
@@ -51,8 +61,11 @@ const App = () => {
                   path="/dashboard"
                   element={
                     <ProtectedRoute redirectTo="/login">
-                      <Dashboard />
-                    </ProtectedRoute>
+                      <UserProvider>
+                        <Dashboard />
+                      </UserProvider>
+                      
+                     </ProtectedRoute>
                   }
                 />
 
@@ -79,15 +92,59 @@ const App = () => {
                     </ProtectedRoute>
                   }
                 />
+                {/* Admin Product stock history */}
+                <Route
+                  path="/admin-dashboard/product-stock-history/:productId"
+                  element={
+                    <ProtectedRoute redirectTo="/admin-login">
+                      <AdminUIProvider>
+                        <ProductStockHistory />
+                      </AdminUIProvider>
+                    </ProtectedRoute>
+                  }
+                />
+
+                  {/* Admin Product details */}
+                <Route
+                  path="/admin-dashboard/product-detail-for-admin/:productId"
+                  element={
+                    <ProtectedRoute redirectTo="/admin-login">
+                      <AdminUIProvider>
+                        <ProductDetailForAdmin/>
+                      </AdminUIProvider>
+                    </ProtectedRoute>
+                  }
+                />
+                    <Route
+                  path="/admin-dashboard/user-detail/:userId"
+                  element={
+                    <ProtectedRoute redirectTo="/admin-login">
+                      <AdminUIProvider>
+                        <UserDetail />
+                      </AdminUIProvider>
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* ✅ Order Details (wrapped in AdminUIProvider now) */}
                 <Route
-                  path="/order/:orderId"
+                  path="/order-for-admin/:orderId"
                   element={
                     <ProtectedRoute redirectTo="/login">
                       <AdminUIProvider>
-                        <OrderDetails />
+                        <OrderDetailForAdmin />
                       </AdminUIProvider>
+                    </ProtectedRoute>
+                  }
+                />
+
+                   <Route
+                  path="/order-for-user/:orderId"
+                  element={
+                    <ProtectedRoute redirectTo="/login">
+                      <UserProvider>
+                        <OrderDetailForUser />
+                      </UserProvider>
                     </ProtectedRoute>
                   }
                 />
@@ -97,6 +154,7 @@ const App = () => {
         </CartProvider>
       </ProductProvider>
     </AuthProvider>
+    </LocalNotificationProvider>
   );
 };
 

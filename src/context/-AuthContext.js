@@ -9,6 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [userId,setUserId]=useState(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null); // "USER" or "ADMIN"
+  // 🧩 Notifications fetched from backend after login
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
@@ -25,7 +27,23 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (username,userId, token,userRole) => {
+  // 🧩 Helper: Fetch notifications from backend
+  const fetchNotifications = async (username, token) => {
+    try {
+      const res = await fetch(`http://localhost:8989/notifications/${username}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch notifications");
+      const data = await res.json();
+      // Sort newest first
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setNotifications(data);
+    } catch (err) {
+      console.error("❌ Error fetching notifications:", err);
+    }
+  };
+
+  const login =async (username,userId, token,userRole) => {
     localStorage.setItem('username', username);
     localStorage.setItem('token', token);
     localStorage.setItem('userId',userId);
@@ -34,7 +52,12 @@ export const AuthProvider = ({ children }) => {
     setToken(token);
     setUserId(userId);
     setRole(userRole);
+    // 🔔 Fetch notifications right after login
+    await fetchNotifications(username, token);
   };
+
+  
+  
 
   const logout = () => {
     localStorage.removeItem('username');
@@ -47,13 +70,15 @@ export const AuthProvider = ({ children }) => {
     setRole(null);
   };
 
+  
+
   // ✅ Loading screen during auth state initialization
   if (loading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <AuthContext.Provider value={{ username,userId, role, token, login, logout }}>
+    <AuthContext.Provider value={{ username,userId, role, token, login, logout,notifications,setNotifications }}>
       {children}
     </AuthContext.Provider>
   );

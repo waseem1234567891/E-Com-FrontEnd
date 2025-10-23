@@ -1,9 +1,9 @@
 .admin-container {
-  max-width: 1000px;
-  margin: auto;
+  width: 100%;
   padding: 2rem;
   font-family: Arial, sans-serif;
 }
+
 
 .admin-header {
   display: flex;
