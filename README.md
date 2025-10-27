@@ -38,7 +38,10 @@ git clone https://github.com/your-username/ecommerce-frontend.git
 
 # Navigate into the project folder
 cd ecommerce-frontend
-🧑‍💻 Running the Project
+
+
+# Install dependencies
+npm instal
 
 🧑‍💻 Running the Project
 
