@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import OrderService from "../services/OrderService";
-import { AuthContext } from "../context/-AuthContext"; // ✅ removed leading dash
+import { AuthContext } from "../context/-AuthContext"; 
 import { useAdminUI } from "../context/AdminUIContext";
 
 const OrderDetails = () => {

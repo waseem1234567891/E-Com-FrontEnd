@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ProductList from "./ProductList";
-import Cart from "../components/Cart";
+import Cart from "../components/cart/Cart";
 
 const Home = () => {
   const [refreshKey, setRefreshKey] = useState(0);

@@ -2,7 +2,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import { AuthProvider } from "./context/-AuthContext"; // ✅ fixed path (removed leading '-')
+import { AuthProvider } from "./context/-AuthContext"; 
 import { ProductProvider } from "./context/ProductContext";
 import { CartProvider } from "./context/CartContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -11,7 +11,7 @@ import { UserProvider } from "./context/UserUIContext";
 import { LocalNotificationProvider } from "./context/LocalNotificationContext";
 
 import Navbar from "./components/Navbar";
-import NotificationToasts from "./pages/NotificationToasts";
+import NotificationToasts from "./pages/notification/NotificationToasts";
 
 import Home from "./pages/Home";
 import Register from "./components/Auth/Register";
@@ -22,12 +22,12 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/userdashboard/DashBoard";
 import AdminDashBoard from "./pages/AdminDashBoard";
 import CheckoutPage from "./pages/checkout/CheckoutPage";
-import NotificationCenterPage from "./pages/NotificationCenter";
+import NotificationCenterPage from "./pages/notification/NotificationCenter";
 import OrderDetails from "./pages/OrderDetails";
 import ProductReviews from "./pages/adminComponent/product/ProductReviews";
 import ProtectedRoute from "./components/ProtectedRoute";
-import UserDetail from "./pages/adminComponent/UserDetail";
-import OrderDetailForAdmin from "./pages/adminComponent/OrderDetailForUser";
+import UserDetail from "./pages/adminComponent/user/UserDetail";
+import OrderDetailForAdmin from "./pages/adminComponent/order/OrderDetailForUser";
 import OrderDetailForUser from "./components/OrderDetailForUser";
 import ProductDetail from "./pages/ProductDetail";
 import ProductDetailForAdmin from "./pages/adminComponent/ProductDetailForAdmin";

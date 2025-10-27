@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNotifications } from "../context/NotificationContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 const NotificationToasts = () => {
   const { notifications } = useNotifications();

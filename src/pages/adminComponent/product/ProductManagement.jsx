@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Link } from "react-router-dom";
 import ProductService from "../../../services/ProductService";
 import ProCatService from "../../../services/ProCatService";
 import { AuthContext } from "../../../context/-AuthContext";
@@ -8,11 +7,14 @@ import Pagination from "../../../util/Pagination";
 import ProductTable from "./ProductTable";
 import ProductFormModal from "./ProductFormModal";
 import CategoryModal from "./CategoryModal";
+import ProductHeader from "./ProductHeader";
+import useCategories from "./useCategories";
+import useProducts from "./useProducts";
+import EditCategoryModal from "./EditCategoryModal";
+
 
 const ProductManagement = () => {
-  const [products, setProducts] = useState([]);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -25,49 +27,25 @@ const ProductManagement = () => {
   const [previewUrl, setPreviewUrl] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [proCategories, setProCategories] = useState([]);
+  
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [tagInput, setTagInput] = useState("");
   const { token } = useContext(AuthContext);
+  const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
 
   // Add stock modal state
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedProductForStock, setSelectedProductForStock] = useState(null);
 
-  // Fetch products
-  const fetchProducts = async (
-    pageNumber = 0,
-    categoryId = selectedCategory
-  ) => {
-    try {
-      const response = await ProductService.getProductsPaginated(
-        pageNumber,
-        6,
-        categoryId === "All" || categoryId === "" ? null : categoryId
-      );
-      setProducts(response.data.content);
-      setTotalPages(response.data.totalPages);
-      setPage(response.data.number);
-    } catch (error) {
-      console.error("Error loading products:", error);
-    }
-  };
+//fetching product using useProduct hook
+  const { products, page, totalPages, setPage, fetchProducts } =
+    useProducts(selectedCategory);
 
-  // Fetch categories
-  const fetchCategories = async () => {
-    try {
-      const response = await ProCatService.getAllCateGory();
-      setProCategories(response.data || []);
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    }
-  };
+  // Fetch categories using useCategory hook
+  const { proCategories, fetchCategories } = useCategories();
 
-  useEffect(() => {
-    fetchProducts(page, selectedCategory);
-    fetchCategories();
-  }, [page, selectedCategory]);
+  
 
   // Input change
   const handleInputChange = (e) => {
@@ -158,36 +136,11 @@ const ProductManagement = () => {
     <div style={{ padding: "2rem" }}>
       <h2 style={{ marginBottom: "1rem" }}>Product Management</h2>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "1rem" }}>
-        <button
-          style={{ ...styles.button, backgroundColor: "#007bff" }}
-          onClick={() => {
-            setFormData({
-              name: "",
-              price: "",
-              categoryId: "",
-              tags: [],
-              stock: 0,
-            });
-            setImageFile(null);
-            setPreviewUrl("");
-            setEditingId(null);
-            setShowModal(true);
-          }}
-        >
-          Add New Product
-        </button>
-
-        <button
-          style={{ ...styles.button, backgroundColor: "#17a2b8" }}
-          onClick={() => {
-            setNewCategoryName("");
-            setShowCategoryModal(true);
-          }}
-        >
-          Add New Category
-        </button>
-      </div>
+       <ProductHeader
+        onAddProduct={() => setShowModal(true)}
+        onAddCategory={() => setShowCategoryModal(true)}
+        onEditCategory={() => setShowEditCategoryModal(true)}
+      />
 
        <ProductTable
     products={products}
@@ -220,9 +173,17 @@ const ProductManagement = () => {
   show={showCategoryModal}
   onClose={() => setShowCategoryModal(false)}
   onSubmit={async (name) => {
-    await ProCatService.addCategory(name);
+    await ProCatService.addCategory({
+        proCatName: name
+      });
     fetchCategories();
   }}
+/>
+<EditCategoryModal
+  show={showEditCategoryModal}
+  onClose={() => setShowEditCategoryModal(false)}
+  categories={proCategories}
+  onUpdated={fetchCategories}
 />
 
       {/* ✅ Add Stock Modal */}

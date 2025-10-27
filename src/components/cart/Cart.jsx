@@ -1,15 +1,17 @@
 // src/components/Cart.jsx
 import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCartContext } from "../context/CartContext";
-import { AuthContext } from "../context/-AuthContext";
-import CartService from "../services/CartService";
+import { useCartContext } from "../../context/CartContext";
+import { AuthContext } from "../../context/-AuthContext";
+import CartService from "../../services/CartService";
+import CartItem from "./CartItem";
+import CartSummary from "./CartSummary";
 import {
   getGuestCart,
   clearGuestCart,
   changeGuestCartQuantity,
   removeFromGuestCart
-} from "../util/guestCart";
+} from "../../util/guestCart";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -48,7 +50,7 @@ const Cart = () => {
   }, [refreshCartFlag, token]);
 
   // Delete item
-  const handleDeleteItem = async (productId) => {
+  const handleDelete = async (productId) => {
     if (token) {
       try {
         const updated = await CartService.removeFromCart(productId, token);
@@ -63,7 +65,7 @@ const Cart = () => {
   };
 
   // Clear cart
-  const handleClearCart = async () => {
+  const handleClear = async () => {
     if (token) {
       try {
         await CartService.clearCart(token);
@@ -130,76 +132,22 @@ const Cart = () => {
       ) : (
         <>
           <ul className="space-y-4 mb-4">
-            {cartItems.map((item, index) => (
-              <li
-                key={index}
-                className="flex items-center justify-between bg-gray-50 p-3 rounded-xl shadow-sm border border-gray-200"
-              >
-                <img
-                  src={item.imageUrl}
-                  alt={item.name || item.productName}
-                  className="w-12 h-12 rounded object-cover mr-3"
-                  onError={(e) => (e.currentTarget.src = "/placeholder.png")}
-                />
-                <div className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-800 truncate">
-                      {item.name || item.productName}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleDecrease(item.productId)}
-                        className="px-2 bg-gray-200 rounded"
-                      >
-                        -
-                      </button>
-                      <span className="text-xs">{item.quantity}</span>
-                      <button
-                        onClick={() => handleIncrease(item.productId)}
-                        className="px-2 bg-gray-200 rounded"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">
-                    Price: ${item.productPrice?.toFixed(2) || "0.00"}
-                  </div>
-                  {item.stock !== undefined && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      Stock: {item.stock}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleDeleteItem(item.productId)}
-                  className="text-red-500 hover:text-red-700 ml-2 text-lg"
-                  title="Remove item"
-                >
-                  ❌
-                </button>
-              </li>
+            {cartItems.map((item) => (
+              <CartItem
+                key={item.productId}
+                item={item}
+                onIncrease={handleIncrease}
+                onDecrease={handleDecrease}
+                onDelete={handleDelete}
+              />
             ))}
           </ul>
 
-          <div className="text-right font-semibold text-lg mb-4">
-            Total: ${totalPrice.toFixed(2)}
-          </div>
-
-          <div className="flex justify-between space-x-2">
-            <button
-              onClick={handleClearCart}
-              className="flex-1 bg-red-100 text-red-600 font-semibold py-2 rounded-lg hover:bg-red-200 text-sm"
-            >
-              Clear
-            </button>
-            <button
-              onClick={handleCheckout}
-              className="flex-1 bg-green-100 text-green-700 font-semibold py-2 rounded-lg hover:bg-green-200 text-sm"
-            >
-              Checkout
-            </button>
-          </div>
+           <CartSummary
+            totalPrice={totalPrice}
+            onClear={handleClear}
+            onCheckout={handleCheckout}
+          />
         </>
       )}
     </div>

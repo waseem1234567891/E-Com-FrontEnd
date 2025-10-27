@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import UserManagement from './adminComponent/user/UserManagement';
 import ProductManagement from './adminComponent/product/ProductManagement';
 import OrderManagement from './adminComponent/order/OrderManagement';
-import SalesReports from '../components/SalesReports';
+import SalesReports from '../pages/adminComponent/report/SalesReports';
 import UserActivityOverview from '../pages/adminComponent/UserActivityOverview';
 import InventoryOverview from '../pages/adminComponent/InventoryOverview'; // ✅ NEW
 import './adminComponent/AdminDashBoard.css';

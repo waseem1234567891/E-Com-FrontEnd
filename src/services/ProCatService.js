@@ -1,29 +1,46 @@
 import axios from "axios";
 
-const API_BASE_URL="http://localhost:8989/category";
+const API_BASE_URL = "http://localhost:8989/category";
 
-const addCategory=(FormData)=>{
-    return axios.post(`${API_BASE_URL}/add`,FormData,{
-
-headers: {
-      "Content-Type": "application/json"
-    }
-    });
-
+// ✅ Add a new category
+const addCategory = (categoryData) => {
+  return axios.post(`${API_BASE_URL}/add`, categoryData, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 };
 
-const getAllCateGory=()=>{
-    return axios.get(`${API_BASE_URL}/getAllCate`);
+// ✅ Get all categories
+const getAllCateGory = () => {
+  return axios.get(`${API_BASE_URL}/getAllCate`);
 };
 
-const getCategoryById=(proCatGorId)=>{
-
-    
-    return axios.get(`${API_BASE_URL}/getbyid/${proCatGorId}`)
-
+// ✅ Get category by ID
+const getCategoryById = (categoryId) => {
+  return axios.get(`${API_BASE_URL}/getbyid/${categoryId}`);
 };
 
-const ProCatService={
-    addCategory,getAllCateGory,getCategoryById
-}
+// ✅ Update category
+const updateCategory = (categoryId, updatedData) => {
+  return axios.put(`${API_BASE_URL}/update/${categoryId}`, updatedData, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+// ✅ Delete category
+const deleteCategory = (categoryId) => {
+  return axios.delete(`${API_BASE_URL}/delete/${categoryId}`);
+};
+
+const ProCatService = {
+  addCategory,
+  getAllCateGory,
+  getCategoryById,
+  updateCategory,
+  deleteCategory,
+};
+
 export default ProCatService;
