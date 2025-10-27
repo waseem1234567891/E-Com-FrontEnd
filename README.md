@@ -1,70 +1,115 @@
-# Getting Started with Create React App
+# 🛍️ E-commerce App (Frontend)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the **frontend** of the **E-commerce App** — a modern, responsive shopping platform built using **React** and **Tailwind CSS**, connected to a **Spring Boot backend** running on **port 8989**.
 
-## Available Scripts
+The frontend handles all user-facing features like browsing products, managing the cart, and handling authentication, while the backend provides RESTful APIs for business logic and data management.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🚀 Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- 🏠 Beautiful, responsive UI built with Tailwind CSS  
+- 🛒 Product listing and product detail pages  
+- 🔍 Search and filter functionality  
+- ❤️ Add to cart and wishlist  
+- 👤 User login, registration, and management  
+- 🧾 Checkout and order management  
+- 📱 Fully responsive and mobile-friendly  
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🧰 Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **React** – Frontend framework  
+- **Tailwind CSS** – Styling and layout  
+- **React Router DOM** – Client-side routing  
+- **Axios** – For API calls to backend  
+- **Spring Boot (Backend)** – REST API (on port **8989**)  
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📦 Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Clone the repository and install the dependencies.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+# Clone the repository
+git clone https://github.com/your-username/ecommerce-frontend.git
 
-### `npm run eject`
+# Navigate into the project folder
+cd ecommerce-frontend
+🧑‍💻 Running the Project
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+🧑‍💻 Running the Project
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Start the development server:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+npm start
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-## Learn More
+The frontend will run at:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+http://localhost:3000
 
-To learn React, check out the [React documentation](https://reactjs.org/).
 
-### Code Splitting
+Make sure your Spring Boot backend is running at:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+http://localhost:8989
 
-### Analyzing the Bundle Size
+⚙️ Environment Variables
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Create a .env file in the root directory and add:
 
-### Making a Progressive Web App
+REACT_APP_API_URL=http://localhost:8989/api
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
-### Advanced Configuration
+Then restart the app:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+npm start
 
-### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-### `npm run build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+📁 Folder Structure
+E-COMMERCE-FRONTEND/
+├── build/                  # Production build files
+├── public/                 # Static assets and index.html
+├── src/
+│   ├── assets/             # Images, icons, etc.
+│   ├── components/         # Reusable UI components
+│   ├── context/            # Global state or context providers
+│   ├── pages/              # Application pages (Home, Cart, etc.)
+│   ├── services/           # Axios API service files
+│   ├── util/               # Helper functions
+│   ├── App.css
+│   ├── App.js
+│   ├── App.test.js
+│   ├── index.css
+│   ├── index.js
+│   ├── logo.svg
+│   ├── reportWebVitals.js
+│   └── setupTests.js
+├── .gitignore
+├── package.json
+├── tailwind.config.js
+└── README.md
+
+🌐 Deployment
+
+You can deploy your React app on:
+
+Vercel
+
+Netlify
+
+GitHub Pages
+
+Before deploying, build the app:
+
+npm run build
+
+
+Then deploy the build/ directory.
+
+# Install dependencies
+npm install
