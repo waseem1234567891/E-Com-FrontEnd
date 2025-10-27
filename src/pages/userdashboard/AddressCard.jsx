@@ -15,10 +15,18 @@ const AddressCard = ({ addresses, onEdit, onDelete, onAdd }) => (
     {addresses?.length > 0 ? (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {addresses.map((addr, idx) => (
-          <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+          <div
+            key={idx}
+            className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col justify-between"
+          >
             <div className="text-gray-700 space-y-1">
-              <p>{addr.street}, {addr.city}</p>
-              <p>{addr.state} {addr.postalCode}</p>
+              {/* ✅ Include houseNumber */}
+              <p>
+                {addr.houseNumber} {addr.street}, {addr.city || ""}
+              </p>
+              <p>
+                {addr.state || ""} {addr.postalCode}
+              </p>
               <p>{addr.country}</p>
             </div>
             <div className="mt-3 flex gap-2">

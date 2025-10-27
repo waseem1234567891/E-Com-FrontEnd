@@ -5,6 +5,7 @@ import OrderService from "../../services/OrderService";
 import UserService from "../../services/UserService";
 import { normalizeCartItems } from "../../util/normalizeCartItems";
 import CartSummary from "./CartSummary";
+import AddAddressForm from "../checkout/AddAddressForm";
 import { useNavigate } from "react-router-dom";
 import { useLocalNotification } from "../../context/LocalNotificationContext";
 
@@ -14,23 +15,35 @@ export default function UserCheckout() {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+
   const { showNotification, message, type } = useLocalNotification();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
-      const cart = await CartService.getCart(token);
-      setCartItems(normalizeCartItems(cart));
+      try {
+        const cart = await CartService.getCart(token);
+        setCartItems(normalizeCartItems(cart));
 
-      const res = await UserService.getAddresses(userId, token);
-      setAddresses(res.data || []);
+        const res = await UserService.getAddresses(userId, token);
+        const list = res.data || [];
+        setAddresses(list);
+
+        if (list.length > 0) {
+          setSelectedAddress(list[0]);
+        }
+      } catch (err) {
+        console.error("❌ Failed fetching checkout data:", err);
+      }
     };
     fetchData();
   }, [token, userId]);
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddress)
+    if (!selectedAddress) {
       return showNotification("Please select a shipping address.", "error");
+    }
 
     const addressText = `${selectedAddress.houseNumber} ${selectedAddress.street}, ${selectedAddress.postalCode}, ${selectedAddress.country}`;
 
@@ -47,7 +60,7 @@ export default function UserCheckout() {
     try {
       await OrderService.checkout(payload, token);
       await CartService.clearCart(token);
-      showNotification("✅ Order placed successfully!", "success");
+      //showNotification("✅ Order placed successfully!", "success");
       setTimeout(() => navigate("/"), 2000);
     } catch (err) {
       console.error(err);
@@ -73,26 +86,50 @@ export default function UserCheckout() {
         </div>
       )}
 
-      {/* Address */}
+      {/* 🏠 Address Section */}
       <div className="mb-4">
-        <h3 className="font-medium mb-2">Select a saved address:</h3>
-        {addresses.map((addr) => (
-          <label key={addr.id} className="flex items-center gap-2 mb-1">
-            <input
-              type="radio"
-              name="address"
-              checked={selectedAddress?.id === addr.id}
-              onChange={() => setSelectedAddress(addr)}
-            />
-            <span>
-              {addr.houseNumber} {addr.street}, {addr.postalCode},{" "}
-              {addr.country}
-            </span>
-          </label>
-        ))}
+        <h3 className="font-medium mb-2">Shipping Address</h3>
+
+        {addresses.length > 0 && !showNewAddressForm ? (
+          <>
+            {addresses.map((addr) => (
+              <label key={addr.id} className="flex items-center gap-2 mb-2">
+                <input
+                  type="radio"
+                  name="address"
+                  checked={selectedAddress?.id === addr.id}
+                  onChange={() => setSelectedAddress(addr)}
+                />
+                <span>
+                  {addr.houseNumber} {addr.street}, {addr.postalCode}, {addr.country}
+                </span>
+              </label>
+            ))}
+
+            {/* ➕ Add New Address */}
+            <button
+              onClick={() => setShowNewAddressForm(true)}
+              className="text-blue-600 text-sm underline mt-2"
+            >
+              + Add New Address
+            </button>
+          </>
+        ) : (
+          <AddAddressForm
+            userId={userId}
+            token={token}
+            onSave={(saved) => {
+              const updated = [...addresses, saved];
+              setAddresses(updated);
+              setSelectedAddress(saved);
+              setShowNewAddressForm(false);
+            }}
+            onCancel={() => addresses.length > 0 && setShowNewAddressForm(false)}
+          />
+        )}
       </div>
 
-      {/* Payment */}
+      {/* 💳 Payment Method */}
       <div className="mb-4">
         <label className="block text-gray-600 mb-1">Payment Method:</label>
         <select
@@ -100,20 +137,23 @@ export default function UserCheckout() {
           onChange={(e) => setPaymentMethod(e.target.value)}
           className="w-full border border-gray-300 rounded p-2"
         >
-          <option value="card">Credit/Debit Card</option>
+          <option value="card">Credit / Debit Card</option>
           <option value="cod">Cash on Delivery</option>
         </select>
       </div>
 
-      {/* Cart Summary */}
+      {/* 🛒 Cart Summary */}
       <CartSummary items={cartItems} />
 
-      <button
-        onClick={handlePlaceOrder}
-        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition mt-4"
-      >
-        Confirm & Place Order
-      </button>
+      {/* ✅ Place Order Button */}
+      {addresses.length > 0 && !showNewAddressForm && (
+        <button
+          onClick={handlePlaceOrder}
+          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition mt-4"
+        >
+          Confirm & Place Order
+        </button>
+      )}
     </div>
   );
 }

@@ -20,13 +20,20 @@ const Dashboard = () => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
-    street: "", city: "", state: "", postalCode: "", country: "",
+    houseNumber: "",
+    street: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
   });
   const [profileForm, setProfileForm] = useState({
-    userName: "", firstName: "", lastName: "",
+    userName: "",
+    firstName: "",
+    lastName: "",
   });
 
-  const { token } = useContext(AuthContext);
+  const {userId, token } = useContext(AuthContext);
   const { activeTab, setActiveTab } = useUserUl();
   const navigate = useNavigate();
 
@@ -82,7 +89,14 @@ const Dashboard = () => {
   // --- Address handlers ---
   const openAddAddress = () => {
     setEditingAddress(null);
-    setAddressForm({ street: "", city: "", state: "", postalCode: "", country: "" });
+    setAddressForm({
+      houseNumber: "",
+      street: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: "",
+    });
     setShowAddressModal(true);
   };
 
@@ -102,7 +116,7 @@ const Dashboard = () => {
           addresses: user.addresses.map((a) => (a.id === editingAddress.id ? res.data : a)),
         });
       } else {
-        const res = await UserService.addAddress(payload, token);
+        const res = await UserService.addAddress(userId,payload, token);
         setUser({ ...user, addresses: [...(user.addresses || []), res.data] });
       }
       setShowAddressModal(false);
@@ -163,7 +177,12 @@ const Dashboard = () => {
       {/* Profile tab */}
       {activeTab === "profile" && (
         <>
-          <ProfileCard profileForm={profileForm} user={user} setProfileForm={setProfileForm} onSave={handleSaveProfile} />
+          <ProfileCard
+            profileForm={profileForm}
+            user={user}
+            setProfileForm={setProfileForm}
+            onSave={handleSaveProfile}
+          />
           <div className="mt-6">
             <AddressCard
               addresses={user?.addresses || []}

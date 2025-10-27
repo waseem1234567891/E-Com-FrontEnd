@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import AuthService from "../../services/AuthService";
-import { AuthContext } from "../../context/-AuthContext";
+import AuthService from "../../../services/AuthService";
+import { AuthContext } from "../../../context/-AuthContext";
 
 const UserDetail = () => {
   const { userId } = useParams();

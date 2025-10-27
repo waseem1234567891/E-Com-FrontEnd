@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import OrderService from "../../services/OrderService";
-import { AuthContext } from "../../context/-AuthContext";
-import { useAdminUI } from "../../context/AdminUIContext";
-import OrderDetails1 from "../../components/OrderDetails1";
+import OrderService from "../../../services/OrderService";
+import { AuthContext } from "../../../context/-AuthContext";
+import { useAdminUI } from "../../../context/AdminUIContext";
+import OrderDetails1 from "../../../components/OrderDetails1";
 
 const OrderDetailForAdmin = () => {
   const { orderId } = useParams();

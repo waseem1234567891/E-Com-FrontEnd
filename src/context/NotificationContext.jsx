@@ -1,11 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { AuthContext } from "./-AuthContext";
@@ -13,104 +6,68 @@ import { AuthContext } from "./-AuthContext";
 const NotificationContext = createContext();
 export const useNotifications = () => useContext(NotificationContext);
 
-const STORAGE_KEY = "app_notifications";
-
 export const NotificationProvider = ({ children }) => {
-  const {
-    token,
-    username,
-    notifications: authNotifications,
-    setNotifications: setAuthNotifications,
-  } = useContext(AuthContext);
+  const { token, username, notifications: authNotifications, setNotifications: setAuthNotifications } = useContext(AuthContext);
 
   const [notifications, setNotifications] = useState([]);
   const clientRef = useRef(null);
 
-  // ✅ Merge backend notifications (from AuthContext) into local state
+  // Merge backend notifications safely
   useEffect(() => {
-    if (authNotifications && authNotifications.length > 0) {
-      // Avoid duplicates by comparing IDs (if backend notifications have IDs)
-      setNotifications((prev) => {
-        const existingIds = new Set(prev.map((n) => n.id));
-        const newOnes = authNotifications.filter((n) => !existingIds.has(n.id));
+    if (authNotifications?.length) {
+      setNotifications(prev => {
+        const existingIds = new Set(prev.map(n => n.id));
+        const newOnes = authNotifications.filter(n => !existingIds.has(n.id));
         return [...newOnes, ...prev];
       });
     }
   }, [authNotifications]);
 
-  // ✅ Load persisted notifications (optional fallback)
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const now = Date.now();
-    const valid = saved.filter((n) => !n.expire || n.expire > now);
-    setNotifications(valid);
-  }, []);
-
-  // ✅ Persist notifications in localStorage for reloads
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-  }, [notifications]);
-
-  // ✅ Add new notification (for WebSocket or manually)
-  const addNotification = useCallback((message, type = "info", duration = null, link) => {
+  // Add new notification (manual or via WebSocket)
+  const addNotification = useCallback((message, type = "info", duration = null, link = null, idFromBackend = null) => {
     if (!message) return;
-    const id = Date.now() + Math.random();
-    const expire = duration
-      ? Date.now() + duration
-      : Date.now() + 2 * 24 * 60 * 60 * 1000; // 2 days default
-    const newNotification = { id, message, type, expire, temporary: !!duration, link };
 
-    setNotifications((prev) => [newNotification, ...prev]);
-    setAuthNotifications((prev) => [newNotification, ...prev]); // sync with AuthContext
+    const id = idFromBackend ?? `local-${Date.now()}-${Math.random()}`;
+    const expire = duration ? Date.now() + duration : Date.now() + 2 * 24 * 60 * 60 * 1000;
 
-    // Auto-remove temporary notifications
+    const newNotification = { id, message, type, link, expire, temporary: !!duration };
+
+    setNotifications(prev => {
+        // ✅ Prevent duplicates by id
+        if (prev.some(n => n.id === newNotification.id)) return prev;
+        return [newNotification, ...prev];
+      });
+   // setAuthNotifications(prev => [newNotification, ...prev]);
+
     if (duration) {
       setTimeout(() => {
-        setNotifications((prev) => prev.filter((n) => n.id !== id));
-        setAuthNotifications((prev) => prev.filter((n) => n.id !== id));
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        setAuthNotifications(prev => prev.filter(n => n.id !== id));
       }, duration);
     }
   }, [setAuthNotifications]);
 
-  // ✅ Remove notification
-  const removeNotification = useCallback(
-  async (id) => {
+  // Remove notification (UI + backend)
+  const removeNotification = useCallback(async (id) => {
     if (!id) return;
 
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    setAuthNotifications(prev => prev.filter(n => n.id !== id));
+
+    if (id.toString().startsWith("local-")) return; // Skip local-only
+
     try {
-      // === 1. Optimistically remove from UI ===
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      setAuthNotifications((prev) => prev.filter((n) => n.id !== id));
-
-      // === 2. Call backend API ===
-      const response = await fetch(`http://localhost:8989/notifications/${id}`, {
+      const res = await fetch(`http://localhost:8989/notifications/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete notification: ${response.status}`);
-      }
-
-      console.log(`🗑️ Notification ${id} deleted from backend`);
-    } catch (error) {
-      console.error("❌ Error deleting notification:", error);
-
-      // === 3. Optionally restore notification if delete failed ===
-      const deleted = notifications.find((n) => n.id === id);
-      if (deleted) {
-        setNotifications((prev) => [deleted, ...prev]);
-        setAuthNotifications((prev) => [deleted, ...prev]);
-      }
+      if (!res.ok) throw new Error("Failed to delete notification");
+    } catch (err) {
+      console.error("❌ Error deleting notification:", err);
     }
-  },
-  [token, notifications, setAuthNotifications]
-);
+  }, [token, setAuthNotifications]);
 
-
-  // ✅ WebSocket setup (real-time updates)
+  // WebSocket setup
   useEffect(() => {
     if (!token || !username) return;
 
@@ -129,10 +86,7 @@ export const NotificationProvider = ({ children }) => {
       client.subscribe("/user/queue/notifications", (msg) => {
         try {
           const payload = JSON.parse(msg.body);
-          const message = payload.message || "New notification";
-          const type = payload.type || "info";
-          const link = payload.link || null;
-          addNotification(message, type, null, link);
+          addNotification(payload.message || "New notification", payload.type || "info", null, payload.link, payload.id);
         } catch {
           addNotification(msg.body, "info");
         }
@@ -142,7 +96,7 @@ export const NotificationProvider = ({ children }) => {
       client.subscribe("/topic/notifications", (msg) => {
         try {
           const payload = JSON.parse(msg.body);
-          addNotification(payload.message || "New notification", payload.type || "info");
+          addNotification(payload.message || "New notification", payload.type || "info", null, null, payload.id);
         } catch {
           addNotification(msg.body, "info");
         }
@@ -159,9 +113,7 @@ export const NotificationProvider = ({ children }) => {
   }, [token, username, addNotification]);
 
   return (
-    <NotificationContext.Provider
-      value={{ notifications, addNotification, removeNotification }}
-    >
+    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification }}>
       {children}
     </NotificationContext.Provider>
   );

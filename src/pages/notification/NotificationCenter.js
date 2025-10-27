@@ -1,6 +1,6 @@
 // src/components/NotificationCenter.js
 import React from "react";
-import { useNotifications } from "../context/NotificationContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { useNavigate, Link } from "react-router-dom";
 
 const NotificationCenter = () => {

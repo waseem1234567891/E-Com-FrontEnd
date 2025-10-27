@@ -41,6 +41,7 @@ const OrderFilter = ({ searchQuery, setSearchQuery, selectedStatus, setSelectedS
           <option value="PROCESSING">Processing</option>
           <option value="SHIPPED">Shipped</option>
           <option value="DELIVERED">Delivered</option>
+          <option value="CANCELLED">CANCELLED</option>
         </select>
       </div>
     </div>

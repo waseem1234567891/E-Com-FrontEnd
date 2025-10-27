@@ -3,18 +3,15 @@ import { getGuestCart, clearGuestCart } from "../../util/guestCart";
 import { normalizeCartItems } from "../../util/normalizeCartItems";
 import OrderService from "../../services/OrderService";
 import CartSummary from "./CartSummary";
+import AddAddressForm from "../checkout/AddAddressForm";
 import { useNavigate } from "react-router-dom";
 import { useLocalNotification } from "../../context/LocalNotificationContext";
 
 export default function GuestCheckout() {
   const [cartItems, setCartItems] = useState([]);
   const [guestInfo, setGuestInfo] = useState({ name: "", email: "" });
-  const [shippingAddress, setShippingAddress] = useState({
-    houseNumber: "",
-    street: "",
-    postalCode: "",
-    country: "",
-  });
+  const [shippingAddress, setShippingAddress] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("cod");
 
   const { showNotification, message, type } = useLocalNotification();
@@ -29,20 +26,15 @@ export default function GuestCheckout() {
     if (cartItems.length === 0)
       return showNotification("Your cart is empty!", "error");
 
-    const isComplete =
-      guestInfo.name.trim() &&
-      guestInfo.email.trim() &&
-      Object.values(shippingAddress).every((val) => val?.toString().trim());
-
-    if (!isComplete)
+    if (!guestInfo.name || !guestInfo.email || !shippingAddress)
       return showNotification("Please fill all fields.", "error");
 
-    const finalAddress = `${shippingAddress.houseNumber} ${shippingAddress.street}, ${shippingAddress.postalCode}, ${shippingAddress.country}`;
+    const addressText = `${shippingAddress.houseNumber} ${shippingAddress.street}, ${shippingAddress.postalCode}, ${shippingAddress.country}`;
 
     const orderPayload = {
       guestName: guestInfo.name,
       guestEmail: guestInfo.email,
-      shippingAddress: finalAddress,
+      shippingAddress: addressText,
       paymentMethod,
       items: cartItems.map((item) => ({
         productId: item.productId,
@@ -80,49 +72,53 @@ export default function GuestCheckout() {
         </div>
       )}
 
-      {/* Guest Info */}
+      {/* 👤 Guest Info */}
       <div className="mb-4">
         <input
           type="text"
           placeholder="Your Name"
           value={guestInfo.name}
-          onChange={(e) =>
-            setGuestInfo({ ...guestInfo, name: e.target.value })
-          }
+          onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
           className="w-full border border-gray-300 rounded p-2 mb-2"
         />
         <input
           type="email"
           placeholder="Your Email"
           value={guestInfo.email}
-          onChange={(e) =>
-            setGuestInfo({ ...guestInfo, email: e.target.value })
-          }
+          onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
           className="w-full border border-gray-300 rounded p-2"
         />
       </div>
 
-      {/* Shipping Address */}
+      {/* 🏠 Shipping Address */}
       <div className="mb-4 border-t pt-3">
         <h3 className="text-lg font-medium mb-2">Shipping Address</h3>
-        {["houseNumber", "street", "postalCode", "country"].map((field) => (
-          <input
-            key={field}
-            type="text"
-            placeholder={field}
-            value={shippingAddress[field]}
-            onChange={(e) =>
-              setShippingAddress({
-                ...shippingAddress,
-                [field]: e.target.value,
-              })
-            }
-            className="w-full border border-gray-300 rounded p-2 mb-2"
+
+        {shippingAddress && !showAddressForm ? (
+          <div className="border p-2 rounded mb-2 bg-gray-50">
+            <p className="text-sm text-gray-700">
+              {shippingAddress.houseNumber} {shippingAddress.street},{" "}
+              {shippingAddress.postalCode}, {shippingAddress.country}
+            </p>
+            <button
+              onClick={() => setShowAddressForm(true)}
+              className="text-blue-600 text-sm underline mt-1"
+            >
+              Edit Address
+            </button>
+          </div>
+        ) : (
+          <AddAddressForm
+            onSave={(addr) => {
+              setShippingAddress(addr);
+              setShowAddressForm(false);
+            }}
+            onCancel={() => shippingAddress && setShowAddressForm(false)}
           />
-        ))}
+        )}
       </div>
 
-      {/* Payment */}
+      {/* 💳 Payment */}
       <div className="mb-4">
         <label className="block text-gray-600 mb-1">Payment Method:</label>
         <select
@@ -135,7 +131,7 @@ export default function GuestCheckout() {
         </select>
       </div>
 
-      {/* Order Summary */}
+      {/* 🛒 Order Summary */}
       <CartSummary items={cartItems} />
 
       <button

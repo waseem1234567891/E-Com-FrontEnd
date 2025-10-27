@@ -9,7 +9,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { AuthContext } from "../context/-AuthContext"; // import context
+import { AuthContext } from "../../../context/-AuthContext"; // import context
 
 const SalesReports = () => {
   const { token } = useContext(AuthContext); // get token from context

@@ -8,6 +8,7 @@ import Pagination from "../../../util/Pagination";
 import OrderFilter from "./OrderFilter";
 import OrderTable from "./OrderTable";
 import OrderStatusModal from "./OrderStatusModal";
+import { useLocalNotification } from "../../../context/LocalNotificationContext";
 
 const OrderManagement = () => {
   const { token, role } = useContext(AuthContext);
@@ -22,6 +23,7 @@ const OrderManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState("");
+  const { showNotification, message, type } = useLocalNotification();
 
   // Fetch orders with optional filters
   const fetchOrders = async (pageNumber = 0, status = selectedStatus, search = searchQuery) => {
@@ -55,19 +57,22 @@ const OrderManagement = () => {
 
     try {
       await OrderService.cancelAnOrder(orderId, token);
-      alert("Order deleted successfully.");
+      showNotification(`✅ Order no ${orderId} is Deleted successfully!`, "success");
       fetchOrders(page);
     } catch (error) {
       console.error("Error deleting order:", error);
-      alert("Failed to delete order.");
+      showNotification(`✅ Order no ${orderId} is not Deleted !`, "error");
     }
   };
 
   const handleStatusUpdate = async () => {
     try {
       await OrderService.updateOrderStatus(selectedOrder.id, newStatus, token);
+      
       setShowModal(false);
+      
       fetchOrders(page);
+      showNotification(`✅ Order no ${selectedOrder.id} is Updated successfully!`, "success");
     } catch (error) {
       console.error("Error updating status:", error);
     }

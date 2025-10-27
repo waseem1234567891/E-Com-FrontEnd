@@ -3,7 +3,8 @@ import React from "react";
 const AddressModal = ({ show, onClose, onSave, addressForm, setAddressForm, editingAddress }) => {
   if (!show) return null;
 
-  const fields = ["street", "city", "state", "postalCode", "country"];
+  // ✅ Added "houseNumber" as the first field
+  const fields = ["houseNumber", "street", "city", "state", "postalCode", "country"];
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -20,8 +21,10 @@ const AddressModal = ({ show, onClose, onSave, addressForm, setAddressForm, edit
             <input
               type="text"
               placeholder={field}
-              value={addressForm[field]}
-              onChange={(e) => setAddressForm({ ...addressForm, [field]: e.target.value })}
+              value={addressForm[field] || ""}
+              onChange={(e) =>
+                setAddressForm({ ...addressForm, [field]: e.target.value })
+              }
               className="w-full border px-3 py-2 rounded-md text-sm"
             />
           </div>

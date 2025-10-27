@@ -12,16 +12,39 @@ export const AuthProvider = ({ children }) => {
   // 🧩 Notifications fetched from backend after login
   const [notifications, setNotifications] = useState([]);
 
+  const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 < Date.now(); // ✅ Compare expiration to current time]
+  } catch (err) {
+    return true; // If something fails → treat token as invalid
+  }
+};
+
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
     const storedToken = localStorage.getItem('token');
     const storedUserId=localStorage.getItem('userId');
     const storedRole = localStorage.getItem("role");
+     if(storedToken && !isTokenExpired(storedToken))
+     {
+       setUsername(storedUsername);
+       setToken(storedToken);
+       setUserId(storedUserId);
+       setRole(storedRole);
+       fetchNotifications(storedUsername, storedToken);
+     }else{
+      // ✅ Token invalid → keep user as guest
+       localStorage.removeItem("username");
+       localStorage.removeItem("token");
+       localStorage.removeItem("userId");
+       localStorage.removeItem("role");
 
-    if (storedUsername) setUsername(storedUsername);
-    if (storedToken) setToken(storedToken);
-    if (storedUserId) setUserId(storedUserId);
-    if (storedRole) setRole(storedRole);
+       setUsername(null);
+       setToken(null);
+       setUserId(null);
+       setRole(null);
+     }
     
 
     setLoading(false);
