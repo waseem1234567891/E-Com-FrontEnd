@@ -1,4 +1,3 @@
-// src/components/Cart.jsx
 import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCartContext } from "../../context/CartContext";
@@ -10,14 +9,56 @@ import {
   getGuestCart,
   clearGuestCart,
   changeGuestCartQuantity,
-  removeFromGuestCart
+  removeFromGuestCart,
+  addToGuestCart
 } from "../../util/guestCart";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
+  const [isOver, setIsOver] = useState(false); // highlight state
+
   const { refreshCartFlag, triggerCartRefresh } = useCartContext();
   const navigate = useNavigate();
   const { token, userId } = useContext(AuthContext);
+
+  // 🟢 Allow drop
+  const allowDrop = (e) => {
+    e.preventDefault();
+    setIsOver(true);
+  };
+
+  const handleLeave = () => setIsOver(false);
+
+  // 🟢 Handle drop
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsOver(false);
+
+    const data = e.dataTransfer.getData("product");
+    if (!data) return;
+
+    const product = JSON.parse(data);
+
+    try {
+      if (token) {
+        // check existing quantity to respect stock
+        const existing = cartItems.find(i => i.productId === product.id);
+        const qty = existing ? existing.quantity : 0;
+
+        if (qty + 1 > product.stock) {
+          return alert("⚠️ Cannot exceed available stock!");
+        }
+
+        await CartService.addToCart(product.id, userId, 1, token);
+      } else {
+        addToGuestCart(product);
+      }
+
+      triggerCartRefresh();
+    } catch (err) {
+      console.error("Drop error:", err);
+    }
+  };
 
   // Load cart
   const fetchCart = async () => {
@@ -32,12 +73,11 @@ const Cart = () => {
       items = getGuestCart();
     }
 
-    // Normalize image URL
     const normalizedItems = items.map(item => ({
       ...item,
       imageUrl: item.imageUrl || item.imagePath
-        ? (item.imageUrl?.startsWith("http") 
-            ? item.imageUrl 
+        ? (item.imageUrl?.startsWith("http")
+            ? item.imageUrl
             : `http://localhost:8989${item.imageUrl || item.imagePath}`)
         : "/placeholder.png"
     }));
@@ -52,37 +92,28 @@ const Cart = () => {
   // Delete item
   const handleDelete = async (productId) => {
     if (token) {
-      try {
-        const updated = await CartService.removeFromCart(productId, token);
-        triggerCartRefresh();
-      } catch (err) {
-        console.error(err);
-      }
+      await CartService.removeFromCart(productId, token);
     } else {
       removeFromGuestCart(productId);
-      triggerCartRefresh();
     }
+    triggerCartRefresh();
   };
 
   // Clear cart
   const handleClear = async () => {
     if (token) {
-      try {
-        await CartService.clearCart(token);
-        triggerCartRefresh();
-      } catch (err) {
-        console.error(err);
-      }
+      await CartService.clearCart(token);
     } else {
       clearGuestCart();
-      triggerCartRefresh();
     }
+    triggerCartRefresh();
   };
 
   // Increase quantity
   const handleIncrease = async (productId) => {
     const item = cartItems.find(i => i.productId === productId);
     if (!item) return;
+
     if (item.quantity >= (item.stock || 999)) {
       alert("⚠️ Cannot exceed available stock!");
       return;
@@ -113,7 +144,6 @@ const Cart = () => {
     triggerCartRefresh();
   };
 
-  // Checkout
   const handleCheckout = () => navigate("/checkout");
 
   const totalPrice = cartItems.reduce(
@@ -122,13 +152,19 @@ const Cart = () => {
   );
 
   return (
-    <div className="w-80 p-5 bg-white rounded-2xl shadow-xl border border-gray-200">
+    <div
+      onDragOver={allowDrop}
+      onDragLeave={handleLeave}
+      onDrop={handleDrop}
+      className={`w-80 p-5 rounded-2xl shadow-xl border transition
+        ${isOver ? "bg-blue-50 border-blue-400" : "bg-white border-gray-200"}`}
+    >
       <h2 className="text-2xl font-semibold text-blue-700 mb-6 text-center">
         🛍️ Your Cart
       </h2>
 
       {cartItems.length === 0 ? (
-        <div className="text-center text-gray-400">Your cart is empty.</div>
+        <div className="text-center text-gray-400">Drop items here 👇</div>
       ) : (
         <>
           <ul className="space-y-4 mb-4">
@@ -143,7 +179,7 @@ const Cart = () => {
             ))}
           </ul>
 
-           <CartSummary
+          <CartSummary
             totalPrice={totalPrice}
             onClear={handleClear}
             onCheckout={handleCheckout}
